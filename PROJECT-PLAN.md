@@ -64,20 +64,20 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Transclusion (`![[embed]]`) — basic support (placeholder rendering)
 
 ### Milestone 1.7 — Web UI (Core)
-- [ ] App shell: routing, layout, navigation
-- [ ] Login page (magic link flow)
-- [ ] Wiki home page (page list + _home.md)
-- [ ] Page view (rendered Markdown with clickable wikilinks)
-- [ ] Page edit with CodeMirror 6
-  - [ ] Markdown syntax highlighting
-  - [ ] Wikilink syntax highlighting
+- [x] App shell: routing, layout, navigation
+- [x] Login page (magic link flow)
+- [x] Wiki home page (page list)
+- [x] Page view (rendered Markdown)
+- [x] Page edit with CodeMirror 6
+  - [x] Markdown syntax highlighting
+  - [ ] Wikilink syntax highlighting (custom extension)
   - [ ] `[[` autocomplete (search existing pages)
-  - [ ] Side-by-side preview
-- [ ] Page history view
-- [ ] Create new page
+  - [x] Side-by-side preview (toggle)
+- [x] Page history view
+- [x] Create new page
 - [ ] Wiki settings (owner: title, visibility)
 - [ ] User settings (display name, key export)
-- [ ] Basic responsive layout
+- [x] Basic responsive layout
 
 ### Milestone 1.8 — MVP Integration & Testing
 - [ ] End-to-end flow: login -> create wiki -> create page -> edit -> view history

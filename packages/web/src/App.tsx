@@ -1,20 +1,69 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { AuthContext, useAuth, useAuthProvider } from './hooks/useAuth';
+import { Login } from './pages/Login';
+import { WikiList } from './pages/WikiList';
+import { WikiHome } from './pages/WikiHome';
+import { PageView } from './pages/PageView';
+import { PageEdit } from './pages/PageEdit';
+import { PageHistory } from './pages/PageHistory';
 
-function Home() {
+function NavBar() {
+  const { user, logout } = useAuth();
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">HangarWiki</h1>
-        <p className="text-lg text-gray-600">A git-native wiki for small teams</p>
+    <nav className="bg-white border-b px-4 py-3">
+      <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <Link to="/" className="font-bold text-gray-900 hover:text-blue-600">
+          HangarWiki
+        </Link>
+        {user && (
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-gray-500">{user.displayName ?? user.email}</span>
+            <button onClick={logout} className="text-gray-500 hover:text-gray-700">
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </nav>
   );
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+  return <>{children}</>;
+}
+
 export function App() {
+  const authValue = useAuthProvider();
+
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-    </Routes>
+    <AuthContext.Provider value={authValue}>
+      <div className="min-h-screen bg-gray-50">
+        <NavBar />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <WikiList />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/:wiki" element={<WikiHome />} />
+          <Route path="/:wiki/_new" element={
+            <ProtectedRoute><PageEdit /></ProtectedRoute>
+          } />
+          <Route path="/:wiki/*/edit" element={
+            <ProtectedRoute><PageEdit /></ProtectedRoute>
+          } />
+          <Route path="/:wiki/*/history" element={<PageHistory />} />
+          <Route path="/:wiki/*" element={<PageView />} />
+        </Routes>
+      </div>
+    </AuthContext.Provider>
   );
 }
