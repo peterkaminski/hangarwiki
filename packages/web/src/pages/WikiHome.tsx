@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { pages as pagesApi, wikis as wikisApi, type PageInfo, type Wiki } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
 
 export function WikiHome() {
   const { wiki: wikiSlug } = useParams<{ wiki: string }>();
+  const { user } = useAuth();
   const [wiki, setWiki] = useState<Wiki | null>(null);
   const [pageList, setPageList] = useState<PageInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,12 +34,22 @@ export function WikiHome() {
     <div className="max-w-3xl mx-auto p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{wiki.title}</h1>
-        <Link
-          to={`/${wikiSlug}/_new`}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          New Page
-        </Link>
+        <div className="flex gap-2">
+          {user && (
+            <Link
+              to={`/${wikiSlug}/_settings`}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              Settings
+            </Link>
+          )}
+          <Link
+            to={`/${wikiSlug}/_new`}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          >
+            New Page
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-1">

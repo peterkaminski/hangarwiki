@@ -123,6 +123,27 @@ export async function getWiki(slug: string): Promise<WikiInfo | null> {
   };
 }
 
+/** Update wiki settings. Only title, visibility, and incipientLinkStyle are updatable. */
+export async function updateWiki(
+  slug: string,
+  updates: { title?: string; visibility?: 'public' | 'private'; incipientLinkStyle?: 'create' | 'highlight' },
+): Promise<WikiInfo | null> {
+  const db = getDb();
+  const wiki = db.select().from(wikis).where(eq(wikis.slug, slug)).get();
+  if (!wiki) return null;
+
+  const values: Partial<{ title: string; visibility: string; incipientLinkStyle: string }> = {};
+  if (updates.title !== undefined) values.title = updates.title;
+  if (updates.visibility !== undefined) values.visibility = updates.visibility;
+  if (updates.incipientLinkStyle !== undefined) values.incipientLinkStyle = updates.incipientLinkStyle;
+
+  if (Object.keys(values).length > 0) {
+    db.update(wikis).set(values).where(eq(wikis.slug, slug)).run();
+  }
+
+  return getWiki(slug);
+}
+
 /** Check if a user has at least the given role on a wiki. */
 export async function checkAccess(
   wikiSlug: string,

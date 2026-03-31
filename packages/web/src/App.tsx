@@ -6,6 +6,7 @@ import { WikiHome } from './pages/WikiHome';
 import { PageView } from './pages/PageView';
 import { PageEdit } from './pages/PageEdit';
 import { PageHistory } from './pages/PageHistory';
+import { WikiSettings } from './pages/WikiSettings';
 
 function NavBar() {
   const { user, logout } = useAuth();
@@ -72,6 +73,9 @@ export function App() {
           <Route path="/:wiki" element={<WikiHome />} />
           <Route path="/:wiki/_new" element={
             <ProtectedRoute><PageEdit /></ProtectedRoute>
+          } />
+          <Route path="/:wiki/_settings" element={
+            <ProtectedRoute><WikiSettings /></ProtectedRoute>
           } />
           <Route path="/:wiki/*" element={<WikiPageRouter />} />
         </Routes>

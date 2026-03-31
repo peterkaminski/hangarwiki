@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
-import { createWiki, listWikis, getWiki } from '../services/wiki.js';
+import { createWiki, listWikis, getWiki, updateWiki, checkAccess } from '../services/wiki.js';
 
 export async function wikiRoutes(app: FastifyInstance) {
   /** List wikis the current user has access to. */
@@ -53,6 +53,32 @@ export async function wikiRoutes(app: FastifyInstance) {
 
       const wiki = await createWiki(slug, title, req.user!.id, visibility);
       return reply.status(201).send({ wiki });
+    },
+  );
+
+  /** Update wiki settings. Owner only. */
+  app.patch<{
+    Params: { wiki: string };
+    Body: { title?: string; visibility?: 'public' | 'private'; incipientLinkStyle?: 'create' | 'highlight' };
+  }>(
+    '/api/wikis/:wiki',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const hasAccess = await checkAccess(req.params.wiki, req.user!.id, 'owner');
+      if (!hasAccess) {
+        return reply.status(403).send({ error: 'Only the wiki owner can change settings' });
+      }
+
+      const { title, visibility, incipientLinkStyle } = req.body;
+
+      if (title !== undefined && !title.trim()) {
+        return reply.status(400).send({ error: 'Title cannot be empty' });
+      }
+
+      const wiki = await updateWiki(req.params.wiki, { title, visibility, incipientLinkStyle });
+      if (!wiki) return reply.status(404).send({ error: 'Wiki not found' });
+
+      return { wiki };
     },
   );
 }
