@@ -55,13 +55,13 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Error handling (conflicts, not found, permissions)
 
 ### Milestone 1.6 — Markdown Pipeline
-- [ ] Remark-based pipeline (parse -> transform -> render)
-- [ ] Custom wikilink plugin (`[[Page Name]]`, `[[Page|display]]`)
-- [ ] Wikilink resolution (link to actual page URLs)
-- [ ] Frontmatter extraction
-- [ ] HTML sanitization
-- [ ] Shared package importable by server and web
-- [ ] Transclusion (`![[embed]]`) — basic support
+- [x] Remark-based pipeline (parse -> transform -> render)
+- [x] Custom wikilink plugin (`[[Page Name]]`, `[[Page|display]]`)
+- [x] Wikilink resolution (link to actual page URLs)
+- [x] Frontmatter extraction
+- [x] HTML sanitization
+- [x] Shared package importable by server and web
+- [x] Transclusion (`![[embed]]`) — basic support (placeholder rendering)
 
 ### Milestone 1.7 — Web UI (Core)
 - [ ] App shell: routing, layout, navigation
