@@ -9,7 +9,7 @@ Ideas and feature requests that aren't yet in [PROJECT-PLAN.md](PROJECT-PLAN.md)
 Import an existing Markdown wiki from a git URL or zip upload. This is the fastest way to get real content into HangarWiki.
 
 **Phase 1 — Public repos:**
-- Clone from a public HTTPS URL (e.g., `https://github.com/peterkaminski/pkai-founders-kb.git`)
+- Clone from a public HTTPS URL (e.g., `https://github.com/peterkaminski/arc-vault`)
 - Upload a zip file containing Markdown files
 - Auto-detect page structure (find `.md` files, derive titles, build page index)
 - Create a new wiki backed by the cloned repo
