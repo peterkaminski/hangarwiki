@@ -1,27 +1,28 @@
 import { join } from 'node:path';
 
+/** Configuration — reads from process.env on each access so tests can override. */
 export const config = {
-  port: parseInt(process.env.PORT ?? '4000', 10),
-  host: process.env.HOST ?? '0.0.0.0',
+  get port() { return parseInt(process.env.PORT ?? '4000', 10); },
+  get host() { return process.env.HOST ?? '0.0.0.0'; },
 
   // Data directory for local git clones and SQLite DB
-  dataDir: process.env.DATA_DIR ?? join(process.cwd(), 'data'),
+  get dataDir() { return process.env.DATA_DIR ?? join(process.cwd(), 'data'); },
 
   // Forgejo / Gitea
-  forgeUrl: process.env.FORGE_URL ?? 'http://localhost:3000',
-  forgeApiToken: process.env.FORGE_API_TOKEN ?? '',
+  get forgeUrl() { return process.env.FORGE_URL ?? 'http://localhost:3000'; },
+  get forgeApiToken() { return process.env.FORGE_API_TOKEN ?? ''; },
 
   // Magic link auth
   magicLinkExpiryMinutes: 15,
   sessionExpiryDays: 30,
-  appUrl: process.env.APP_URL ?? 'http://localhost:5173',
+  get appUrl() { return process.env.APP_URL ?? 'http://localhost:5173'; },
 
   // Email (Postmark first, Resend as alternative)
-  emailProvider: (process.env.EMAIL_PROVIDER ?? 'console') as 'postmark' | 'resend' | 'console',
-  postmarkApiToken: process.env.POSTMARK_API_TOKEN ?? '',
-  resendApiKey: process.env.RESEND_API_KEY ?? '',
-  emailFrom: process.env.EMAIL_FROM ?? 'wiki@example.com',
+  get emailProvider() { return (process.env.EMAIL_PROVIDER ?? 'console') as 'postmark' | 'resend' | 'console'; },
+  get postmarkApiToken() { return process.env.POSTMARK_API_TOKEN ?? ''; },
+  get resendApiKey() { return process.env.RESEND_API_KEY ?? ''; },
+  get emailFrom() { return process.env.EMAIL_FROM ?? 'wiki@example.com'; },
 
   // Server-side encryption key for stored private keys
-  encryptionKey: process.env.ENCRYPTION_KEY ?? '',
+  get encryptionKey() { return process.env.ENCRYPTION_KEY ?? ''; },
 };

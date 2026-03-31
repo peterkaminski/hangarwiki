@@ -37,13 +37,13 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 ### Milestone 1.4 — Database & Auth
 - [x] SQLite setup with Drizzle ORM
 - [x] Schema: users, sessions, magic_links, wikis, wiki_members
-- [ ] Migrations infrastructure
-- [ ] Magic link flow: request -> email -> verify -> session
-- [ ] Email sending (Postmark/Resend/Mailgun for prod, log-to-console for dev)
-- [ ] Session middleware (cookie-based)
-- [ ] Keypair generation (Ed25519) on user creation
-- [ ] Key export endpoint
-- [ ] Auth middleware (protect routes)
+- [ ] Migrations infrastructure (using CREATE IF NOT EXISTS for now)
+- [x] Magic link flow: request -> email -> verify -> session
+- [x] Email sending (Postmark/Resend/Mailgun for prod, log-to-console for dev)
+- [x] Session middleware (cookie-based)
+- [x] Keypair generation (Ed25519) on user creation
+- [x] Key export endpoint
+- [x] Auth middleware (protect routes)
 
 ### Milestone 1.5 — Page CRUD API
 - [ ] REST endpoints: list pages, get page, create page, update page

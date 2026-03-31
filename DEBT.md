@@ -20,6 +20,15 @@ Track things that work but aren't fully tested, hardcoded assumptions, and known
 - [ ] **URL-to-file reverse lookup is naive** — `urlPathToSearchPattern` replaces underscores with spaces, but the original filename might have had actual underscores. Need to fall back to index lookup. *(paths.ts)*
 - [ ] **No tests for deeply nested folder resolution** — Wikilink resolution tested with 1 level of folders. Should test 3+ levels. *(paths.test.ts)*
 
+## Auth & Crypto
+
+- [ ] **No rate limiting on magic link requests** — Anyone can spam POST /api/auth/login and trigger emails. Need rate limiting per email and per IP. *(routes/auth.ts)*
+- [ ] **No CSRF protection** — State-changing endpoints (login, logout) have no CSRF tokens. Fastify has `@fastify/csrf-protection`. *(routes/auth.ts)*
+- [ ] **PEM-to-OpenSSH conversion assumes fixed DER layout** — `pemToOpenSSH` assumes Ed25519 SPKI DER has a 12-byte header. Should verify this holds across Node.js versions, or use a library. *(crypto.ts)*
+- [ ] **No proper migration system** — Using `CREATE TABLE IF NOT EXISTS` instead of versioned migrations. Fine for dev, needs Drizzle Kit migrations before any production use. *(db/index.ts)*
+- [ ] **Magic link email HTML is inline** — Should use proper email templates. Currently just inline HTML string. *(services/auth.ts)*
+- [ ] **Postmark/Resend providers untested against real APIs** — Only console provider exercised. Need integration test with real credentials. *(services/email.ts)*
+
 ## General
 
 - [ ] **No error handling middleware** — Server has no global error handler or structured error responses yet. *(index.ts)*
