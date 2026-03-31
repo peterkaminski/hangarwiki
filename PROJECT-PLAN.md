@@ -5,38 +5,38 @@
 A single-user-testable wiki that can create pages, edit them in the browser, and persist to git.
 
 ### Milestone 1.1 — Project Scaffolding
-- [ ] Initialize monorepo (npm workspaces)
-- [ ] Set up TypeScript configs (base + per-package)
-- [ ] Set up server package (Fastify + TypeScript)
-- [ ] Set up web package (Vite + React + Tailwind + TypeScript)
-- [ ] Dev workflow: `npm run dev` starts both server and client (concurrently)
-- [ ] Docker Compose for local Forgejo instance (dev environment)
-- [ ] Basic CLAUDE.md for the project
+- [x] Initialize monorepo (npm workspaces)
+- [x] Set up TypeScript configs (base + per-package)
+- [x] Set up server package (Fastify + TypeScript)
+- [x] Set up web package (Vite + React + Tailwind + TypeScript)
+- [x] Dev workflow: `npm run dev` starts both server and client (concurrently)
+- [x] Docker Compose for local Forgejo instance (dev environment)
+- [x] Basic CLAUDE.md for the project
 
 ### Milestone 1.2 — Git Service
-- [ ] `GitService` class wrapping git CLI operations
-- [ ] Init/clone repo
-- [ ] Read file, list files
-- [ ] Commit with author identity
-- [ ] Push/pull to remote
-- [ ] Diff and log (file history)
-- [ ] Conflict detection on push
-- [ ] Unit tests with temp repos
+- [x] `GitService` class wrapping git CLI operations
+- [x] Init/clone repo
+- [x] Read file, list files
+- [x] Commit with author identity
+- [x] Push/pull to remote
+- [x] Diff and log (file history)
+- [x] Conflict detection on push
+- [x] Unit tests with temp repos
 
 ### Milestone 1.3 — Forge Integration (Gitea/Forgejo)
-- [ ] Forge API client: Gitea-compatible baseline with capability detection
-- [ ] Server flavor/version detection on startup
-- [ ] Feature-gating for Forgejo-specific endpoints
-- [ ] Create/delete repository
-- [ ] Register deploy keys (server access)
-- [ ] Register user SSH keys
-- [ ] Configure push webhooks
+- [x] Forge API client: Gitea-compatible baseline with capability detection
+- [x] Server flavor/version detection on startup
+- [x] Feature-gating for Forgejo-specific endpoints
+- [x] Create/delete repository
+- [x] Register deploy keys (server access)
+- [x] Register user SSH keys
+- [x] Configure push webhooks
 - [ ] Webhook receiver endpoint
 - [ ] Integration tests against local Forgejo (and ideally Gitea)
 
 ### Milestone 1.4 — Database & Auth
-- [ ] SQLite setup with Drizzle ORM
-- [ ] Schema: users, sessions, magic_links, wikis, wiki_members
+- [x] SQLite setup with Drizzle ORM
+- [x] Schema: users, sessions, magic_links, wikis, wiki_members
 - [ ] Migrations infrastructure
 - [ ] Magic link flow: request -> email -> verify -> session
 - [ ] Email sending (Postmark/Resend/Mailgun for prod, log-to-console for dev)
