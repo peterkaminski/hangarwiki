@@ -4,6 +4,8 @@ import cors from '@fastify/cors';
 import { config } from './config.js';
 import { initDb } from './db/index.js';
 import { authRoutes } from './routes/auth.js';
+import { wikiRoutes } from './routes/wikis.js';
+import { pageRoutes } from './routes/pages.js';
 import { optionalAuth } from './middleware/auth.js';
 
 async function main() {
@@ -29,6 +31,8 @@ async function main() {
 
   // Routes
   await app.register(authRoutes);
+  await app.register(wikiRoutes);
+  await app.register(pageRoutes);
 
   try {
     await app.listen({ port: config.port, host: config.host });

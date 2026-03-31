@@ -46,13 +46,13 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Auth middleware (protect routes)
 
 ### Milestone 1.5 — Page CRUD API
-- [ ] REST endpoints: list pages, get page, create page, update page
-- [ ] Page history endpoint (git log for file)
+- [x] REST endpoints: list pages, get page, create page, update page
+- [x] Page history endpoint (git log for file)
 - [ ] Wikilink extraction (parse `[[links]]` from content)
 - [ ] Backlinks query (which pages link to this page?)
-- [ ] Page delete (with git commit)
+- [x] Page delete (with git commit)
 - [ ] Attachment upload endpoint
-- [ ] Error handling (conflicts, not found, permissions)
+- [x] Error handling (conflicts, not found, permissions)
 
 ### Milestone 1.6 — Markdown Pipeline
 - [ ] Remark-based pipeline (parse -> transform -> render)
