@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { pages as pagesApi, wikis as wikisApi, type PageContent, type PageInfo, type Wiki } from '../lib/api';
 import { renderMarkdown } from '../lib/markdown';
+import { useAuth } from '../hooks/useAuth';
 
 export function PageView() {
   const { wiki: wikiSlug, '*': urlPath } = useParams<{ wiki: string; '*': string }>();
+  const { user } = useAuth();
   const [page, setPage] = useState<PageContent | null>(null);
   const [html, setHtml] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,12 +50,14 @@ export function PageView() {
           <h1 className="text-2xl font-bold text-gray-900 mt-1">{page.title}</h1>
         </div>
         <div className="flex gap-2">
-          <Link
-            to={`/${wikiSlug}/${urlPath}/edit`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-          >
-            Edit
-          </Link>
+          {user && (
+            <Link
+              to={`/${wikiSlug}/${urlPath}/edit`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            >
+              Edit
+            </Link>
+          )}
           <Link
             to={`/${wikiSlug}/${urlPath}/history`}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"

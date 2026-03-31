@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { join } from 'node:path';
 import { config } from '../config.js';
 import { getDb } from '../db/index.js';
-import { wikis, wikiMembers, pageIndex } from '../db/schema.js';
+import { users, wikis, wikiMembers, pageIndex } from '../db/schema.js';
 import { GitService, type GitAuthor } from './git.js';
 import { ForgeClient } from './forge.js';
 import { filenameToTitle, filePathToUrlPath } from './paths.js';
@@ -144,7 +144,24 @@ export async function checkAccess(
     .all()
     .find((m) => m.userId === userId);
 
-  if (!membership) return false;
+  if (!membership) {
+    // Public wikis auto-grant editor access to any authenticated user
+    if (wiki.visibility === 'public' && requiredRole !== 'owner') {
+      // Verify the user exists before creating membership
+      const user = db.select().from(users).where(eq(users.id, userId)).get();
+      if (user) {
+        db.insert(wikiMembers).values({
+          id: nanoid(),
+          wikiId: wiki.id,
+          userId,
+          role: 'editor',
+          acceptedAt: new Date().toISOString(),
+        }).run();
+        return true;
+      }
+    }
+    return false;
+  }
 
   const roleHierarchy = { viewer: 0, editor: 1, owner: 2 };
   return roleHierarchy[membership.role as keyof typeof roleHierarchy] >= roleHierarchy[requiredRole];
