@@ -59,6 +59,37 @@ Forgejo will be available at `http://localhost:3000`. On first run:
 3. Generate an API token (Settings > Applications)
 4. Add the token to `env.sh` as `FORGE_API_TOKEN`
 
+## Running locally with an AI coding agent
+
+When developing with an AI agent like Claude Code, the agent can start the server and mediate the login flow for you. The key challenge is that magic link tokens are printed to the server console, which the agent needs to be able to read.
+
+### Recommended approach
+
+Have the agent start the servers with output captured to a log file:
+
+```bash
+ENCRYPTION_KEY=$(openssl rand -hex 32) EMAIL_PROVIDER=console \
+  npm run dev > /tmp/hangarwiki-dev.log 2>&1 &
+```
+
+Then, after you request a magic link from the login page at `http://localhost:5173/login`:
+
+1. Ask the agent to read the log file for the magic link URL
+2. The agent extracts the `?token=...` URL from the console email output
+3. Open that URL in your browser to complete login
+
+The agent can also interact with the API directly on your behalf — creating wikis, pages, and checking state — using `curl` against `http://localhost:4000/api/`.
+
+### Why this works
+
+In development mode (`EMAIL_PROVIDER=console`), magic link emails are printed to stdout instead of sent. An AI agent with shell access can read these logs, find the token URL, and relay it to you. This avoids the need for a real email provider during local testing.
+
+### Stopping the server
+
+```bash
+lsof -ti:4000 -ti:5173 | xargs kill
+```
+
 ## Production deployment
 
 HangarWiki is designed to run alongside a Forgejo instance behind a Caddy reverse proxy.
