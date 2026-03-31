@@ -21,7 +21,7 @@ export function WikiHome() {
     }).catch(() => setLoading(false));
   }, [wikiSlug]);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading && !wiki) return <div className="p-8 text-gray-500">Loading...</div>;
   if (!wiki) return <div className="p-8 text-red-600">Wiki not found</div>;
 
   // Separate special pages from regular pages

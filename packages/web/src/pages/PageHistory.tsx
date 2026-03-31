@@ -17,7 +17,7 @@ export function PageHistory() {
     }).catch(() => setLoading(false));
   }, [wiki, urlPath]);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading && history.length === 0) return <div className="p-8 text-gray-500">Loading...</div>;
 
   const cleanPath = urlPath?.replace(/\/history$/, '') ?? '';
 

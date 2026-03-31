@@ -1,42 +1,74 @@
-import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { pages as pagesApi, wikis as wikisApi, type PageContent, type PageInfo, type Wiki } from '../lib/api';
 import { renderMarkdown } from '../lib/markdown';
 import { useAuth } from '../hooks/useAuth';
 
+// Module-level cache so remounted components show content instantly
+const pageCache = new Map<string, { page: PageContent; html: string }>();
+
 export function PageView() {
   const { wiki: wikiSlug, '*': urlPath } = useParams<{ wiki: string; '*': string }>();
   const { user } = useAuth();
-  const [page, setPage] = useState<PageContent | null>(null);
-  const [html, setHtml] = useState('');
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const cacheKey = `${wikiSlug}/${urlPath}`;
+  const cached = pageCache.get(cacheKey);
+  const [page, setPage] = useState<PageContent | null>(cached?.page ?? null);
+  const [html, setHtml] = useState(cached?.html ?? '');
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState('');
+
+  /** Intercept clicks on internal links so they use client-side navigation. */
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const anchor = (e.target as HTMLElement).closest('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+    // Only intercept same-origin, non-external links
+    if (href.startsWith('/') && !href.startsWith('//')) {
+      e.preventDefault();
+      navigate(href);
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (!wikiSlug || !urlPath) return;
+
+    setError('');
+    // If we have cached content for a different page, show loading
+    const key = `${wikiSlug}/${urlPath}`;
+    const hit = pageCache.get(key);
+    if (hit) {
+      setPage(hit.page);
+      setHtml(hit.html);
+      setLoading(false);
+    } else if (!loading) {
+      // Navigated to uncached page — don't flash, keep showing old content
+    }
 
     Promise.all([
       pagesApi.get(wikiSlug, urlPath),
       pagesApi.list(wikiSlug),
       wikisApi.get(wikiSlug),
-    ]).then(async ([{ page }, { pages: allPages }, { wiki }]) => {
-      setPage(page);
+    ]).then(async ([{ page: newPage }, { pages: allPages }, { wiki }]) => {
       const rendered = await renderMarkdown(
-        page.content,
+        newPage.content,
         `/${wikiSlug}`,
         allPages,
       );
-      // Post-process incipient links based on wiki setting
       const finalHtml = applyIncipientLinkStyle(rendered, wiki, wikiSlug);
+      pageCache.set(key, { page: newPage, html: finalHtml });
+      setPage(newPage);
       setHtml(finalHtml);
       setLoading(false);
     }).catch((err) => {
       setError(err.message);
+      setPage(null);
       setLoading(false);
     });
   }, [wikiSlug, urlPath]);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading && !page) return <div className="p-8 text-gray-500">Loading...</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
   if (!page) return <div className="p-8 text-red-600">Page not found</div>;
 
@@ -67,9 +99,11 @@ export function PageView() {
         </div>
       </div>
 
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className="prose prose-blue max-w-none"
         dangerouslySetInnerHTML={{ __html: html }}
+        onClick={handleContentClick}
       />
     </div>
   );
