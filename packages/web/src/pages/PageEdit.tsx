@@ -41,6 +41,18 @@ export function PageEdit() {
     updatePreview(content);
   }, [content, showPreview, updatePreview]);
 
+  /** Intercept clicks on internal links in the preview pane. */
+  const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const anchor = (e.target as HTMLElement).closest('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+    if (href.startsWith('/') && !href.startsWith('//')) {
+      e.preventDefault();
+      navigate(href);
+    }
+  }, [navigate]);
+
   async function handleSave() {
     if (!wiki) return;
     setSaving(true);
@@ -123,7 +135,10 @@ export function PageEdit() {
           />
         </div>
         {showPreview && (
-          <div className="border rounded-lg p-4 overflow-auto prose prose-blue max-w-none">
+          <div
+            className="border rounded-lg p-4 overflow-auto prose prose-blue max-w-none"
+            onClick={handlePreviewClick}
+          >
             <div dangerouslySetInnerHTML={{ __html: preview }} />
           </div>
         )}
