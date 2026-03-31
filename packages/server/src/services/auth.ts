@@ -39,7 +39,7 @@ export async function requestMagicLink(email: string): Promise<void> {
   }).run();
 
   // Send email
-  const verifyUrl = `${config.appUrl}/auth/verify?token=${token}`;
+  const verifyUrl = `${config.appUrl}/api/auth/verify?token=${token}`;
   const emailProvider = getEmailProvider();
   await emailProvider.send({
     to: normalizedEmail,
@@ -69,6 +69,42 @@ export async function verifyMagicLink(token: string): Promise<{ sessionToken: st
   }
 
   if (link.usedAt) {
+    // Allow a short grace period for double-fetch (browser prefetch, redirect race)
+    const usedAgo = Date.now() - new Date(link.usedAt).getTime();
+    if (usedAgo > 30_000) {
+      throw new Error('This link has already been used');
+    }
+    // Within grace period: find the existing session and return it
+    const user = db.select().from(users).where(eq(users.email, link.email)).get();
+    if (user) {
+      const recentSession = db.select().from(sessions)
+        .where(eq(sessions.userId, user.id))
+        .all()
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      if (recentSession) {
+        // Re-issue a new session token (can't recover the original from hash)
+        const sessionToken = generateToken();
+        const sessionTokenHash = hashToken(sessionToken);
+        const sessionExpiresAt = new Date(
+          Date.now() + config.sessionExpiryDays * 24 * 60 * 60 * 1000,
+        ).toISOString();
+        db.insert(sessions).values({
+          id: nanoid(),
+          userId: user.id,
+          tokenHash: sessionTokenHash,
+          expiresAt: sessionExpiresAt,
+        }).run();
+        return {
+          sessionToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            publicKey: user.publicKey,
+          },
+        };
+      }
+    }
     throw new Error('This link has already been used');
   }
 

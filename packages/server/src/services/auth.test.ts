@@ -56,11 +56,15 @@ describe('magic link flow', () => {
     expect(result.user.publicKey).toContain('BEGIN PUBLIC KEY');
   });
 
-  it('rejects an already-used magic link', async () => {
+  it('allows re-verify within grace period (browser double-fetch)', async () => {
     const token = insertMagicLink('carol@example.com');
 
-    await verifyMagicLink(token);
-    await expect(verifyMagicLink(token)).rejects.toThrow('already been used');
+    const first = await verifyMagicLink(token);
+    const second = await verifyMagicLink(token);
+    expect(first.user.email).toBe('carol@example.com');
+    expect(second.user.email).toBe('carol@example.com');
+    // Different session tokens (each verify creates a new session)
+    expect(first.sessionToken).not.toBe(second.sessionToken);
   });
 
   it('rejects an expired magic link', async () => {
