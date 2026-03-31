@@ -1,3 +1,51 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Wikilinks */
+.prose a.wikilink {
+  text-decoration-color: currentColor;
+}
+
+/* Incipient links — "create" mode (default) */
+.prose a.wikilink-new {
+  color: #9b59b6;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: #c39bd3;
+  cursor: pointer;
+}
+.prose a.wikilink-new:hover {
+  color: #7d3c98;
+  text-decoration-color: #7d3c98;
+}
+
+/* Incipient links — "highlight" mode */
+.prose a.wikilink-new[data-incipient="true"] {
+  color: #b07d2b;
+  background-color: #fef9e7;
+  text-decoration: underline;
+  text-decoration-style: solid;
+  text-decoration-color: #d4ac0d;
+  padding: 0 2px;
+  border-radius: 2px;
+  cursor: default;
+  position: relative;
+}
+.prose a.wikilink-new[data-incipient="true"]:hover::after {
+  content: "This page doesn\2019t exist yet — it may be created soon.";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+  margin-bottom: 4px;
+}

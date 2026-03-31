@@ -13,6 +13,7 @@ export interface WikiInfo {
   slug: string;
   title: string;
   visibility: 'public' | 'private';
+  incipientLinkStyle: 'create' | 'highlight';
 }
 
 export interface PageInfo {
@@ -87,7 +88,7 @@ export async function createWiki(
   await git.add('.');
   await git.commit('Initialize wiki', { name: 'HangarWiki', email: 'wiki@hangarwiki.local' });
 
-  return { id, slug, title, visibility };
+  return { id, slug, title, visibility, incipientLinkStyle: 'create' as const };
 }
 
 /** List all wikis the user has access to. */
@@ -104,6 +105,7 @@ export async function listWikis(userId: string): Promise<WikiInfo[]> {
     slug: m.wikis.slug,
     title: m.wikis.title,
     visibility: m.wikis.visibility as 'public' | 'private',
+    incipientLinkStyle: (m.wikis.incipientLinkStyle as 'create' | 'highlight') ?? 'create',
   }));
 }
 
@@ -117,6 +119,7 @@ export async function getWiki(slug: string): Promise<WikiInfo | null> {
     slug: wiki.slug,
     title: wiki.title,
     visibility: wiki.visibility as 'public' | 'private',
+    incipientLinkStyle: (wiki.incipientLinkStyle as 'create' | 'highlight') ?? 'create',
   };
 }
 

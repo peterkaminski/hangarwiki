@@ -120,7 +120,7 @@ export async function renderMarkdown(
     tagNames: [...(defaultSchema.tagNames ?? []), 'div'],
     attributes: {
       ...defaultSchema.attributes,
-      a: [...(defaultSchema.attributes?.a ?? []), ['class', 'wikilink', 'wikilink-new', 'wikilink wikilink-new']],
+      a: [...(defaultSchema.attributes?.a ?? []), ['class', 'wikilink', 'wikilink-new', 'wikilink wikilink-new'], 'data-incipient'],
       p: [...(defaultSchema.attributes?.p ?? []), ['class', 'transclusion'], 'data-target'],
     },
   };

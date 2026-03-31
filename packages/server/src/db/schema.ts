@@ -33,6 +33,7 @@ export const wikis = sqliteTable('wikis', {
   forgeOwner: text('forge_owner').notNull(), // username on Forgejo/Gitea
   forgeRepo: text('forge_repo').notNull(), // repo name on Forgejo/Gitea
   visibility: text('visibility').notNull().$type<'public' | 'private'>().default('public'),
+  incipientLinkStyle: text('incipient_link_style').notNull().$type<'create' | 'highlight'>().default('create'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

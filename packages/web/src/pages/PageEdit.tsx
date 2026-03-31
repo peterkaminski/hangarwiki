@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { pages as pagesApi } from '../lib/api';
 import { Editor } from '../components/Editor';
 import { renderMarkdown } from '../lib/markdown';
 
 export function PageEdit() {
   const { wiki, '*': urlPath } = useParams<{ wiki: string; '*': string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [content, setContent] = useState('');
   const [pagePath, setPagePath] = useState('');
@@ -13,10 +14,10 @@ export function PageEdit() {
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const isNew = urlPath === '_new';
+  const isNew = !urlPath;
 
-  // For new pages
-  const [newTitle, setNewTitle] = useState('');
+  // For new pages — pre-fill title from ?title= query param (incipient link click)
+  const [newTitle, setNewTitle] = useState(searchParams.get('title') ?? '');
 
   useEffect(() => {
     if (!wiki || !urlPath || isNew) return;
@@ -77,6 +78,15 @@ export function PageEdit() {
             className="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50"
           >
             {showPreview ? 'Hide Preview' : 'Show Preview'}
+          </button>
+          <button
+            onClick={() => {
+              const cleanPath = urlPath?.replace(/\/edit$/, '');
+              navigate(isNew ? `/${wiki}` : `/${wiki}/${cleanPath}`);
+            }}
+            className="px-4 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50"
+          >
+            Cancel
           </button>
           <button
             onClick={handleSave}

@@ -59,6 +59,7 @@ export interface Wiki {
   slug: string;
   title: string;
   visibility: 'public' | 'private';
+  incipientLinkStyle: 'create' | 'highlight';
 }
 
 export interface PageInfo {

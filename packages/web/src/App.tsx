@@ -1,4 +1,4 @@
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useParams } from 'react-router-dom';
 import { AuthContext, useAuth, useAuthProvider } from './hooks/useAuth';
 import { Login } from './pages/Login';
 import { WikiList } from './pages/WikiList';
@@ -29,6 +29,22 @@ function NavBar() {
   );
 }
 
+/** Dispatch /:wiki/* based on URL suffix: /edit, /history, or plain view. */
+function WikiPageRouter() {
+  const { '*': splat } = useParams();
+  const { user, loading } = useAuth();
+
+  if (splat?.endsWith('/edit')) {
+    if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+    if (!user) return <Navigate to="/login" />;
+    return <PageEdit />;
+  }
+  if (splat?.endsWith('/history')) {
+    return <PageHistory />;
+  }
+  return <PageView />;
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
@@ -57,11 +73,7 @@ export function App() {
           <Route path="/:wiki/_new" element={
             <ProtectedRoute><PageEdit /></ProtectedRoute>
           } />
-          <Route path="/:wiki/*/edit" element={
-            <ProtectedRoute><PageEdit /></ProtectedRoute>
-          } />
-          <Route path="/:wiki/*/history" element={<PageHistory />} />
-          <Route path="/:wiki/*" element={<PageView />} />
+          <Route path="/:wiki/*" element={<WikiPageRouter />} />
         </Routes>
       </div>
     </AuthContext.Provider>

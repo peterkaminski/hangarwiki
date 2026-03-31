@@ -67,6 +67,7 @@ export function initDb() {
       forge_owner TEXT NOT NULL,
       forge_repo TEXT NOT NULL,
       visibility TEXT NOT NULL DEFAULT 'public',
+      incipient_link_style TEXT NOT NULL DEFAULT 'create',
       created_at TEXT NOT NULL
     );
 
@@ -88,6 +89,13 @@ export function initDb() {
       updated_at TEXT NOT NULL
     );
   `);
+
+  // Lightweight migrations for columns added after initial schema
+  try {
+    sqlite.exec(`ALTER TABLE wikis ADD COLUMN incipient_link_style TEXT NOT NULL DEFAULT 'create'`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   return db;
 }
