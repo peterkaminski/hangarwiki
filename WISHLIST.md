@@ -121,6 +121,12 @@ Could run as a standalone process or be embedded in the existing Fastify server.
 
 ---
 
+## Visually differentiate external links vs. wikilinks
+
+External links (`[text](https://...)`) and wikilinks (`[[Page Name]]`) should look different in rendered output so readers can tell at a glance whether a link stays in the wiki or leaves it. Needs design prototyping — common approaches (icon after external links, color differences, underline styles) all have tradeoffs. Worth looking at what MediaWiki, Notion, and Obsidian do, but none are great.
+
+---
+
 ## Mermaid / diagram support
 
 Render Mermaid diagrams in Markdown fenced code blocks. Common in technical wikis.
