@@ -97,6 +97,14 @@ Let users generate API tokens for scripting. Useful for bots, CI/CD integration,
 
 ---
 
+## Email allowlist
+
+Restrict who can sign in to the server by maintaining a list of allowed email addresses (or domains). If the allowlist is set, `POST /api/auth/login` rejects emails not on the list before sending the magic link. Useful for private instances where you don't want arbitrary signups.
+
+Could be configured via environment variable (`ALLOWED_EMAILS=alice@example.com,bob@example.com`) or a `_config` table in SQLite for runtime management.
+
+---
+
 ## Mermaid / diagram support
 
 Render Mermaid diagrams in Markdown fenced code blocks. Common in technical wikis.

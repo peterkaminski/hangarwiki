@@ -93,6 +93,69 @@ export async function createWiki(
   return { id, slug, title, visibility, incipientLinkStyle: 'create' as const };
 }
 
+/** Import a wiki from an existing git repository URL. */
+export async function importWiki(
+  url: string,
+  slug: string,
+  title: string,
+  ownerId: string,
+  visibility: 'public' | 'private' = 'public',
+): Promise<WikiInfo> {
+  const db = getDb();
+  const id = nanoid();
+
+  // Clone the remote repo
+  const git = getWikiGit(slug);
+  await git.clone(url);
+
+  // Set local git config for future commits
+  await git.setConfig('user.name', 'HangarWiki');
+  await git.setConfig('user.email', 'wiki@hangarwiki.local');
+
+  // Create the wiki record
+  db.insert(wikis).values({
+    id,
+    slug,
+    title,
+    forgeOwner: '',
+    forgeRepo: '',
+    visibility,
+  }).run();
+
+  // Add owner as member
+  db.insert(wikiMembers).values({
+    id: nanoid(),
+    wikiId: id,
+    userId: ownerId,
+    role: 'owner',
+    acceptedAt: new Date().toISOString(),
+  }).run();
+
+  // Index all wikilinks in existing pages
+  await indexAllPageLinks(slug);
+
+  return { id, slug, title, visibility, incipientLinkStyle: 'create' as const };
+}
+
+/** Scan all markdown pages in a wiki and populate the page_links table. */
+export async function indexAllPageLinks(wikiSlug: string): Promise<number> {
+  const pages = await listPages(wikiSlug);
+  const git = getWikiGit(wikiSlug);
+  let count = 0;
+
+  for (const page of pages) {
+    try {
+      const content = await git.readFile(page.path);
+      await updatePageLinks(wikiSlug, page.path, content);
+      count++;
+    } catch {
+      // Skip unreadable files
+    }
+  }
+
+  return count;
+}
+
 /** List all wikis the user has access to. */
 export async function listWikis(userId: string): Promise<WikiInfo[]> {
   const db = getDb();

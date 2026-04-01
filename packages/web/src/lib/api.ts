@@ -35,6 +35,8 @@ export const wikis = {
     request<{ wiki: Wiki }>('POST', '/wikis', { slug, title, visibility }),
   update: (slug: string, updates: Partial<Pick<Wiki, 'title' | 'visibility' | 'incipientLinkStyle'>>) =>
     request<{ wiki: Wiki }>('PATCH', `/wikis/${slug}`, updates),
+  import: (url: string, slug: string, title: string, visibility?: 'public' | 'private') =>
+    request<{ wiki: Wiki }>('POST', '/wikis/import', { url, slug, title, visibility }),
 };
 
 // Pages

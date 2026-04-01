@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
-import { createWiki, listWikis, getWiki, updateWiki, checkAccess } from '../services/wiki.js';
+import { createWiki, importWiki, listWikis, getWiki, updateWiki, checkAccess } from '../services/wiki.js';
 
 export async function wikiRoutes(app: FastifyInstance) {
   /** List wikis the current user has access to. */
@@ -53,6 +53,38 @@ export async function wikiRoutes(app: FastifyInstance) {
 
       const wiki = await createWiki(slug, title, req.user!.id, visibility);
       return reply.status(201).send({ wiki });
+    },
+  );
+
+  /** Import a wiki from a git URL. */
+  app.post<{ Body: { url: string; slug: string; title: string; visibility?: 'public' | 'private' } }>(
+    '/api/wikis/import',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const { url, slug, title, visibility } = req.body;
+
+      if (!url || !slug || !title) {
+        return reply.status(400).send({ error: 'url, slug, and title are required' });
+      }
+
+      // Validate slug format
+      if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug) && slug.length > 1) {
+        return reply.status(400).send({ error: 'Slug must be lowercase alphanumeric with hyphens' });
+      }
+
+      // Check if slug is taken
+      const existing = await getWiki(slug);
+      if (existing) {
+        return reply.status(409).send({ error: 'A wiki with this slug already exists' });
+      }
+
+      try {
+        const wiki = await importWiki(url, slug, title, req.user!.id, visibility);
+        return reply.status(201).send({ wiki });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Import failed';
+        return reply.status(400).send({ error: `Import failed: ${message}` });
+      }
     },
   );
 
