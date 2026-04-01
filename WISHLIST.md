@@ -105,6 +105,22 @@ Could be configured via environment variable (`ALLOWED_EMAILS=alice@example.com,
 
 ---
 
+## MCP server
+
+Expose HangarWiki as an MCP (Model Context Protocol) server so AI agents can interact with wikis as native tool calls. More useful than a CLI for agent workflows — structured inputs/outputs, no text parsing.
+
+**Possible tools:**
+- `list_wikis`, `get_wiki`, `create_wiki`, `import_wiki`
+- `list_pages`, `get_page`, `create_page`, `update_page`, `search_pages`
+- `get_backlinks`
+- `manage_email_allowlist` — add/remove/list allowed emails (admin)
+- `manage_members` — invite/remove wiki members, change roles
+- `get_wiki_settings`, `update_wiki_settings`
+
+Could run as a standalone process or be embedded in the existing Fastify server.
+
+---
+
 ## Mermaid / diagram support
 
 Render Mermaid diagrams in Markdown fenced code blocks. Common in technical wikis.
