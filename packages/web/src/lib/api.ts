@@ -23,6 +23,8 @@ export const auth = {
   me: () => request<{ user: User }>('GET', '/auth/me'),
   logout: () => request<{ ok: boolean }>('POST', '/auth/logout'),
   exportKey: () => request<{ privateKey: string }>('GET', '/auth/export-key'),
+  updateProfile: (updates: { displayName?: string }) =>
+    request<{ user: User }>('PATCH', '/auth/me', updates),
 };
 
 // Wikis

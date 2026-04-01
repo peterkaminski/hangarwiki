@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { requestMagicLink, verifyMagicLink, invalidateSession, exportPrivateKey } from '../services/auth.js';
+import { requestMagicLink, verifyMagicLink, invalidateSession, exportPrivateKey, updateUser } from '../services/auth.js';
 import { requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
 
@@ -46,6 +46,13 @@ export async function authRoutes(app: FastifyInstance) {
   /** Get the current authenticated user. */
   app.get('/api/auth/me', { preHandler: requireAuth }, async (req) => {
     return { user: req.user };
+  });
+
+  /** Update current user's profile. */
+  app.patch<{ Body: { displayName?: string } }>('/api/auth/me', { preHandler: requireAuth }, async (req) => {
+    const { displayName } = req.body;
+    const user = await updateUser(req.user!.id, { displayName });
+    return { user };
   });
 
   /** Logout — invalidate the current session. */

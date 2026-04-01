@@ -193,6 +193,28 @@ export async function validateSession(sessionToken: string): Promise<AuthUser | 
   };
 }
 
+/** Update a user's profile. */
+export async function updateUser(
+  userId: string,
+  updates: { displayName?: string },
+): Promise<AuthUser | null> {
+  const db = getDb();
+  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  if (!user) return null;
+
+  if (updates.displayName !== undefined) {
+    db.update(users).set({ displayName: updates.displayName }).where(eq(users.id, userId)).run();
+  }
+
+  const updated = db.select().from(users).where(eq(users.id, userId)).get()!;
+  return {
+    id: updated.id,
+    email: updated.email,
+    displayName: updated.displayName,
+    publicKey: updated.publicKey,
+  };
+}
+
 /** Invalidate a session (logout). */
 export async function invalidateSession(sessionToken: string): Promise<void> {
   const db = getDb();

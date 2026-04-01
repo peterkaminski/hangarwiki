@@ -1,20 +1,24 @@
 import { useEffect, useRef } from 'react';
 import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Compartment } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { wikilinkAutocomplete } from './wikilinkComplete';
+import type { PageInfo } from '../lib/api';
 
 interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  pages?: PageInfo[];
 }
 
-export function Editor({ value, onChange, placeholder }: EditorProps) {
+export function Editor({ value, onChange, placeholder, pages }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const autocompleteCompartment = useRef(new Compartment());
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -35,6 +39,9 @@ export function Editor({ value, onChange, placeholder }: EditorProps) {
         updateListener,
         EditorView.lineWrapping,
         placeholder ? cmPlaceholder(placeholder) : [],
+        autocompleteCompartment.current.of(
+          pages?.length ? wikilinkAutocomplete(pages) : [],
+        ),
         // Basic styling
         EditorView.theme({
           '&': {
@@ -84,6 +91,18 @@ export function Editor({ value, onChange, placeholder }: EditorProps) {
       });
     }
   }, [value]);
+
+  // Update autocomplete when page list changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    view.dispatch({
+      effects: autocompleteCompartment.current.reconfigure(
+        pages?.length ? wikilinkAutocomplete(pages) : [],
+      ),
+    });
+  }, [pages]);
 
   return (
     <div

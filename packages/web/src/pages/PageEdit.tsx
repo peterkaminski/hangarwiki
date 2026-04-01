@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { pages as pagesApi } from '../lib/api';
+import { pages as pagesApi, type PageInfo } from '../lib/api';
 import { Editor } from '../components/Editor';
 import { renderMarkdown } from '../lib/markdown';
 
@@ -14,10 +14,16 @@ export function PageEdit() {
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [pageList, setPageList] = useState<PageInfo[]>([]);
   const isNew = !urlPath;
 
   // For new pages — pre-fill title from ?title= query param (incipient link click)
   const [newTitle, setNewTitle] = useState(searchParams.get('title') ?? '');
+
+  useEffect(() => {
+    if (!wiki) return;
+    pagesApi.list(wiki).then(({ pages }) => setPageList(pages)).catch(() => {});
+  }, [wiki]);
 
   useEffect(() => {
     if (!wiki || !urlPath || isNew) return;
@@ -132,6 +138,7 @@ export function PageEdit() {
           <Editor
             value={content}
             onChange={setContent}
+            pages={pageList}
           />
         </div>
         {showPreview && (

@@ -7,6 +7,7 @@ import { PageView } from './pages/PageView';
 import { PageEdit } from './pages/PageEdit';
 import { PageHistory } from './pages/PageHistory';
 import { WikiSettings } from './pages/WikiSettings';
+import { UserSettings } from './pages/UserSettings';
 
 function NavBar() {
   const { user, logout } = useAuth();
@@ -19,7 +20,9 @@ function NavBar() {
         </Link>
         {user && (
           <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-500">{user.displayName ?? user.email}</span>
+            <Link to="/settings" className="text-gray-500 hover:text-gray-700">
+              {user.displayName ?? user.email}
+            </Link>
             <button onClick={logout} className="text-gray-500 hover:text-gray-700">
               Sign out
             </button>
@@ -70,6 +73,9 @@ export function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/settings" element={
+            <ProtectedRoute><UserSettings /></ProtectedRoute>
+          } />
           <Route path="/:wiki" element={<WikiHome />} />
           <Route path="/:wiki/_new" element={
             <ProtectedRoute><PageEdit /></ProtectedRoute>
