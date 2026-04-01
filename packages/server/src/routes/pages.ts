@@ -11,6 +11,7 @@ import {
   getWiki,
   getBacklinks,
   searchPages,
+  getRecentChanges,
   getWikiGit,
 } from '../services/wiki.js';
 import { titleToFilename } from '../services/paths.js';
@@ -90,6 +91,21 @@ export async function pageRoutes(app: FastifyInstance) {
         const message = err instanceof Error ? err.message : 'Diff failed';
         return reply.status(400).send({ error: message });
       }
+    },
+  );
+
+  /** Get recently changed pages. */
+  app.get<{ Params: { wiki: string }; Querystring: { limit?: string } }>(
+    '/api/wikis/:wiki/recent',
+    async (req, reply) => {
+      const { wiki } = req.params;
+
+      const canView = await checkAccess(wiki, req.user?.id, 'viewer');
+      if (!canView) return reply.status(403).send({ error: 'Access denied' });
+
+      const limit = parseInt(req.query.limit ?? '20', 10);
+      const changes = await getRecentChanges(wiki, limit);
+      return { changes };
     },
   );
 

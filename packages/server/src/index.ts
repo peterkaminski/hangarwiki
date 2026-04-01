@@ -1,11 +1,13 @@
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { config } from './config.js';
 import { initDb } from './db/index.js';
 import { authRoutes } from './routes/auth.js';
 import { wikiRoutes } from './routes/wikis.js';
 import { pageRoutes } from './routes/pages.js';
+import { attachmentRoutes } from './routes/attachments.js';
 import { optionalAuth } from './middleware/auth.js';
 
 async function main() {
@@ -20,6 +22,9 @@ async function main() {
     origin: config.appUrl,
     credentials: true,
   });
+  await app.register(multipart, {
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  });
 
   // Populate req.user on all requests if session cookie present
   app.addHook('preHandler', optionalAuth);
@@ -33,6 +38,7 @@ async function main() {
   await app.register(authRoutes);
   await app.register(wikiRoutes);
   await app.register(pageRoutes);
+  await app.register(attachmentRoutes);
 
   try {
     await app.listen({ port: config.port, host: config.host });

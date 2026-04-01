@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { pages as pagesApi, wikis as wikisApi, type PageInfo, type SearchResult, type Wiki } from '../lib/api';
+import { pages as pagesApi, wikis as wikisApi, type PageInfo, type SearchResult, type RecentChange, type Wiki } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 
 export function WikiHome() {
@@ -12,6 +12,8 @@ export function WikiHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [recentChanges, setRecentChanges] = useState<RecentChange[]>([]);
+  const [activeTab, setActiveTab] = useState<'pages' | 'recent'>('pages');
 
   useEffect(() => {
     if (!wikiSlug) return;
@@ -19,9 +21,11 @@ export function WikiHome() {
     Promise.all([
       wikisApi.get(wikiSlug),
       pagesApi.list(wikiSlug),
-    ]).then(([{ wiki }, { pages }]) => {
+      pagesApi.recent(wikiSlug),
+    ]).then(([{ wiki }, { pages }, { changes }]) => {
       setWiki(wiki);
       setPageList(pages);
+      setRecentChanges(changes);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [wikiSlug]);
@@ -125,25 +129,74 @@ export function WikiHome() {
         </div>
       ) : (
         <>
-          <div className="space-y-1">
-            {regularPages.map((page) => (
-              <Link
-                key={page.path}
-                to={`/${wikiSlug}/${page.urlPath}`}
-                className="block px-3 py-2 rounded hover:bg-gray-50 text-blue-600 hover:text-blue-800"
-              >
-                {page.title}
-                {page.path.includes('/') && (
-                  <span className="ml-2 text-xs text-gray-400">
-                    {page.path.split('/').slice(0, -1).join('/')}
-                  </span>
-                )}
-              </Link>
-            ))}
+          <div className="flex gap-4 border-b mb-4">
+            <button
+              onClick={() => setActiveTab('pages')}
+              className={`pb-2 text-sm font-medium border-b-2 ${
+                activeTab === 'pages'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              All Pages ({regularPages.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('recent')}
+              className={`pb-2 text-sm font-medium border-b-2 ${
+                activeTab === 'recent'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Recent Changes
+            </button>
           </div>
 
-          {regularPages.length === 0 && (
-            <p className="text-gray-500 mt-4">No pages yet. Create one to get started.</p>
+          {activeTab === 'pages' ? (
+            <>
+              <div className="space-y-1">
+                {regularPages.map((page) => (
+                  <Link
+                    key={page.path}
+                    to={`/${wikiSlug}/${page.urlPath}`}
+                    className="block px-3 py-2 rounded hover:bg-gray-50 text-blue-600 hover:text-blue-800"
+                  >
+                    {page.title}
+                    {page.path.includes('/') && (
+                      <span className="ml-2 text-xs text-gray-400">
+                        {page.path.split('/').slice(0, -1).join('/')}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+              {regularPages.length === 0 && (
+                <p className="text-gray-500 mt-4">No pages yet. Create one to get started.</p>
+              )}
+            </>
+          ) : (
+            <div className="space-y-1">
+              {recentChanges.map((change, i) => (
+                <Link
+                  key={`${change.path}-${i}`}
+                  to={`/${wikiSlug}/${change.urlPath}`}
+                  className="block px-3 py-2 rounded hover:bg-gray-50"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-600 hover:text-blue-800">{change.title}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(change.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {change.authorName} &middot; {change.message}
+                  </div>
+                </Link>
+              ))}
+              {recentChanges.length === 0 && (
+                <p className="text-gray-500 mt-4">No recent changes.</p>
+              )}
+            </div>
           )}
         </>
       )}

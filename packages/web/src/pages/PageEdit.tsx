@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { pages as pagesApi, type PageInfo } from '../lib/api';
+import { pages as pagesApi, attachments as attachmentsApi, type PageInfo } from '../lib/api';
 import { Editor } from '../components/Editor';
 import { renderMarkdown } from '../lib/markdown';
 
@@ -143,6 +143,15 @@ export function PageEdit() {
             onCancel={() => {
               const cleanPath = urlPath?.replace(/\/edit$/, '');
               navigate(isNew ? `/${wiki}` : `/${wiki}/${cleanPath}`);
+            }}
+            onUpload={async (file) => {
+              if (!wiki) return null;
+              try {
+                const { attachment } = await attachmentsApi.upload(wiki, file);
+                return attachment.url;
+              } catch {
+                return null;
+              }
             }}
           />
         </div>

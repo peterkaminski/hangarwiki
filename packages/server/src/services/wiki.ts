@@ -198,13 +198,14 @@ export async function updateWiki(
   const wiki = db.select().from(wikis).where(eq(wikis.slug, slug)).get();
   if (!wiki) return null;
 
-  const values: Partial<{ title: string; visibility: string; incipientLinkStyle: string }> = {};
+  const values: Record<string, unknown> = {};
   if (updates.title !== undefined) values.title = updates.title;
   if (updates.visibility !== undefined) values.visibility = updates.visibility;
   if (updates.incipientLinkStyle !== undefined) values.incipientLinkStyle = updates.incipientLinkStyle;
 
   if (Object.keys(values).length > 0) {
-    db.update(wikis).set(values).where(eq(wikis.slug, slug)).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db.update(wikis).set(values as any).where(eq(wikis.slug, slug)).run();
   }
 
   return getWiki(slug);
@@ -320,6 +321,33 @@ export async function savePage(
     title: filenameToTitle(pagePath.split('/').pop()!),
     content,
     urlPath: filePathToUrlPath(pagePath),
+  };
+}
+
+/** Save an attachment (binary file) to the wiki's _attachments directory. */
+export async function saveAttachment(
+  wikiSlug: string,
+  filename: string,
+  data: Buffer,
+  author: GitAuthor,
+): Promise<{ path: string; url: string }> {
+  const git = getWikiGit(wikiSlug);
+
+  // Sanitize filename: strip path traversal, collapse special chars
+  const sanitized = filename
+    .replace(/[/\\]/g, '_')
+    .replace(/\.\./g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_');
+
+  const attachmentPath = `_attachments/${sanitized}`;
+  await git.writeBinaryFile(attachmentPath, data);
+  await git.add(attachmentPath);
+  await git.commit(`Upload ${sanitized}`, author);
+
+  return {
+    path: attachmentPath,
+    url: `/${wikiSlug}/_attachments/${sanitized}`,
   };
 }
 
@@ -448,6 +476,44 @@ export async function searchPages(
     urlPath: filePathToUrlPath(r.page_path),
     snippet: r.snippet,
   }));
+}
+
+/** Get recently changed pages across the wiki. */
+export async function getRecentChanges(
+  wikiSlug: string,
+  limit = 20,
+): Promise<Array<{ path: string; title: string; urlPath: string; authorName: string; date: string; message: string }>> {
+  const git = getWikiGit(wikiSlug);
+  // Get recent commits that touch .md files
+  const log = await git.log(undefined, limit * 2); // Overfetch since some commits may be non-page
+
+  const seen = new Set<string>();
+  const results: Array<{ path: string; title: string; urlPath: string; authorName: string; date: string; message: string }> = [];
+
+  for (const entry of log) {
+    if (results.length >= limit) break;
+    try {
+      const files = await git.diffNameStatus(entry.hash);
+      for (const file of files) {
+        if (!file.path.endsWith('.md') || file.path.startsWith('.')) continue;
+        if (seen.has(file.path)) continue;
+        seen.add(file.path);
+        results.push({
+          path: file.path,
+          title: filenameToTitle(file.path.split('/').pop()!),
+          urlPath: filePathToUrlPath(file.path),
+          authorName: entry.authorName,
+          date: entry.date,
+          message: entry.message,
+        });
+        if (results.length >= limit) break;
+      }
+    } catch {
+      // First commit — diffNameStatus may fail, skip
+    }
+  }
+
+  return results;
 }
 
 /** Get the history of a page. */

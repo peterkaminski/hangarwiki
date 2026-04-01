@@ -51,7 +51,7 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Wikilink extraction (parse `[[links]]` from content)
 - [x] Backlinks query (which pages link to this page?)
 - [x] Page delete (with git commit)
-- [ ] Attachment upload endpoint
+- [x] Attachment upload endpoint
 - [x] Error handling (conflicts, not found, permissions)
 
 ### Milestone 1.6 — Markdown Pipeline
@@ -105,18 +105,18 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 
 ### Milestone 2.3 — Rich Content
 - [ ] Transclusion rendering (inline embedded pages)
-- [ ] Backlinks panel in page view
+- [x] Backlinks panel in page view
 - [ ] Tags: parse from frontmatter, tag index page
-- [ ] File attachments: drag-and-drop upload in editor
+- [x] File attachments: drag-and-drop upload in editor
 - [ ] Image preview in editor
-- [ ] Full-text search (SQLite FTS5)
+- [x] Full-text search (SQLite FTS5)
 
 ### Milestone 2.4 — Navigation & Discovery
-- [ ] Sidebar navigation (`_sidebar.md` or auto-generated)
-- [ ] Recently changed pages
+- [x] Sidebar navigation (`_sidebar.md` or auto-generated)
+- [x] Recently changed pages
 - [ ] Graph view (page link visualization) — stretch goal
 - [ ] Orphan pages (no incoming links)
-- [ ] Search with result highlighting
+- [x] Search with result highlighting
 
 ---
 

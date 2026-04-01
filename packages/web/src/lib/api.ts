@@ -56,6 +56,26 @@ export const pages = {
     request<{ results: SearchResult[] }>('GET', `/wikis/${wiki}/search?q=${encodeURIComponent(query)}`),
   diff: (wiki: string, hash: string, urlPath: string) =>
     request<{ diff: string }>('GET', `/wikis/${wiki}/diff/${hash}/${urlPath}`),
+  recent: (wiki: string, limit = 20) =>
+    request<{ changes: RecentChange[] }>('GET', `/wikis/${wiki}/recent?limit=${limit}`),
+};
+
+// Attachments
+export const attachments = {
+  upload: async (wiki: string, file: File): Promise<{ attachment: { path: string; url: string } }> => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API_BASE}/wikis/${wiki}/attachments`, {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(error.error ?? `Upload failed: ${res.status}`);
+    }
+    return res.json();
+  },
 };
 
 // Types
@@ -92,6 +112,15 @@ export interface SearchResult {
   title: string;
   urlPath: string;
   snippet: string;
+}
+
+export interface RecentChange {
+  path: string;
+  title: string;
+  urlPath: string;
+  authorName: string;
+  date: string;
+  message: string;
 }
 
 export interface HistoryEntry {

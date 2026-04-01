@@ -87,13 +87,27 @@ export class GitService {
     return readFile(join(this.repoDir, filePath), 'utf-8');
   }
 
-  /** Write a file to the working tree. */
+  /** Write a text file to the working tree. */
   async writeFile(filePath: string, content: string): Promise<void> {
     const { writeFile, mkdir } = await import('node:fs/promises');
     const { dirname } = await import('node:path');
     const fullPath = join(this.repoDir, filePath);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, content, 'utf-8');
+  }
+
+  /** Write a binary file to the working tree. */
+  async writeBinaryFile(filePath: string, data: Buffer): Promise<void> {
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const { dirname } = await import('node:path');
+    const fullPath = join(this.repoDir, filePath);
+    await mkdir(dirname(fullPath), { recursive: true });
+    await writeFile(fullPath, data);
+  }
+
+  /** Get the absolute path for a file in the working tree. */
+  getFilePath(filePath: string): string {
+    return join(this.repoDir, filePath);
   }
 
   /** Delete a file from the working tree and stage the deletion. */

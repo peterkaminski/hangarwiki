@@ -54,7 +54,7 @@ function remarkWikilinks(options: RenderOptions = {}) {
           const basePath = options.wikiBasePath ?? '';
           children.push({
             type: 'image',
-            url: `${basePath}/_attachments/${token.target}`,
+            url: `/api/wikis${basePath}/attachments/${token.target}`,
             alt: token.display,
           });
         } else if (token.isEmbed) {
