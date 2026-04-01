@@ -6,6 +6,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { wikilinkAutocomplete } from './wikilinkComplete';
+import { wikilinkHighlight } from './wikilinkHighlight';
 import type { PageInfo } from '../lib/api';
 
 interface EditorProps {
@@ -39,6 +40,7 @@ export function Editor({ value, onChange, placeholder, pages }: EditorProps) {
         updateListener,
         EditorView.lineWrapping,
         placeholder ? cmPlaceholder(placeholder) : [],
+        wikilinkHighlight(),
         autocompleteCompartment.current.of(
           pages?.length ? wikilinkAutocomplete(pages) : [],
         ),

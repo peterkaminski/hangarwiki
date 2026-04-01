@@ -11,9 +11,18 @@ export interface EmailProvider {
   send(message: EmailMessage): Promise<void>;
 }
 
+/** Last email sent by the console provider (for testing). */
+let lastConsoleMail: EmailMessage | null = null;
+
+/** Get the last email sent by the console provider (test helper). */
+export function getLastConsoleMail(): EmailMessage | null {
+  return lastConsoleMail;
+}
+
 /** Logs emails to console — for development. */
 class ConsoleEmailProvider implements EmailProvider {
   async send(message: EmailMessage): Promise<void> {
+    lastConsoleMail = message;
     console.log('─── Email (console provider) ───');
     console.log(`To: ${message.to}`);
     console.log(`Subject: ${message.subject}`);

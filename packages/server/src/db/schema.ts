@@ -46,6 +46,14 @@ export const wikiMembers = sqliteTable('wiki_members', {
   acceptedAt: text('accepted_at'),
 });
 
+export const pageLinks = sqliteTable('page_links', {
+  id: text('id').primaryKey(), // nanoid
+  wikiId: text('wiki_id').notNull().references(() => wikis.id),
+  sourcePath: text('source_path').notNull(), // page that contains the link
+  targetTitle: text('target_title').notNull(), // wikilink target (case-preserved)
+  targetTitleLower: text('target_title_lower').notNull(), // lowercase for matching
+});
+
 export const pageIndex = sqliteTable('page_index', {
   id: text('id').primaryKey(), // nanoid
   wikiId: text('wiki_id').notNull().references(() => wikis.id),

@@ -15,7 +15,10 @@ export function WikiList() {
     wikisApi.list().then(({ wikis }) => {
       setWikiList(wikis);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load wikis');
+      setLoading(false);
+    });
   }, []);
 
   async function handleCreate(e: React.FormEvent) {

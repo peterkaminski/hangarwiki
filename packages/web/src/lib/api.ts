@@ -48,6 +48,8 @@ export const pages = {
   delete: (wiki: string, urlPath: string) => request<{ ok: boolean }>('DELETE', `/wikis/${wiki}/pages/${urlPath}`),
   history: (wiki: string, urlPath: string) =>
     request<{ history: HistoryEntry[] }>('GET', `/wikis/${wiki}/history/${urlPath}`),
+  backlinks: (wiki: string, urlPath: string) =>
+    request<{ backlinks: PageInfo[] }>('GET', `/wikis/${wiki}/backlinks/${urlPath}`),
 };
 
 // Types

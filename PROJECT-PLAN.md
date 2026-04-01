@@ -48,8 +48,8 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 ### Milestone 1.5 — Page CRUD API
 - [x] REST endpoints: list pages, get page, create page, update page
 - [x] Page history endpoint (git log for file)
-- [ ] Wikilink extraction (parse `[[links]]` from content)
-- [ ] Backlinks query (which pages link to this page?)
+- [x] Wikilink extraction (parse `[[links]]` from content)
+- [x] Backlinks query (which pages link to this page?)
 - [x] Page delete (with git commit)
 - [ ] Attachment upload endpoint
 - [x] Error handling (conflicts, not found, permissions)
@@ -70,20 +70,20 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Page view (rendered Markdown)
 - [x] Page edit with CodeMirror 6
   - [x] Markdown syntax highlighting
-  - [ ] Wikilink syntax highlighting (custom extension)
-  - [ ] `[[` autocomplete (search existing pages)
+  - [x] Wikilink syntax highlighting (custom extension)
+  - [x] `[[` autocomplete (search existing pages)
   - [x] Side-by-side preview (toggle)
 - [x] Page history view
 - [x] Create new page
-- [ ] Wiki settings (owner: title, visibility)
-- [ ] User settings (display name, key export)
+- [x] Wiki settings (owner: title, visibility, incipient link style)
+- [x] User settings (display name, key export)
 - [x] Basic responsive layout
 
 ### Milestone 1.8 — MVP Integration & Testing
-- [ ] End-to-end flow: login -> create wiki -> create page -> edit -> view history
+- [x] End-to-end flow: login -> create wiki -> create page -> edit -> view history
 - [ ] Git push from external client updates wiki in real-time (webhook)
 - [ ] Web edit + git push conflict scenario works
-- [ ] Basic error states handled in UI
+- [x] Basic error states handled in UI
 - [ ] Deploy to a test server alongside Forgejo
 
 ---

@@ -17,6 +17,7 @@ export function PageView() {
   const [html, setHtml] = useState(cached?.html ?? '');
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState('');
+  const [backlinks, setBacklinks] = useState<PageInfo[]>([]);
 
   /** Intercept clicks on internal links so they use client-side navigation. */
   const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -50,7 +51,8 @@ export function PageView() {
       pagesApi.get(wikiSlug, urlPath),
       pagesApi.list(wikiSlug),
       wikisApi.get(wikiSlug),
-    ]).then(async ([{ page: newPage }, { pages: allPages }, { wiki }]) => {
+      pagesApi.backlinks(wikiSlug, urlPath),
+    ]).then(async ([{ page: newPage }, { pages: allPages }, { wiki }, { backlinks: bl }]) => {
       const rendered = await renderMarkdown(
         newPage.content,
         `/${wikiSlug}`,
@@ -60,6 +62,7 @@ export function PageView() {
       pageCache.set(key, { page: newPage, html: finalHtml });
       setPage(newPage);
       setHtml(finalHtml);
+      setBacklinks(bl);
       setLoading(false);
     }).catch((err) => {
       setError(err.message);
@@ -105,6 +108,25 @@ export function PageView() {
         dangerouslySetInnerHTML={{ __html: html }}
         onClick={handleContentClick}
       />
+
+      {backlinks.length > 0 && (
+        <div className="mt-8 pt-6 border-t">
+          <h2 className="text-sm font-medium text-gray-500 mb-2">
+            Pages that link here
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {backlinks.map((bl) => (
+              <Link
+                key={bl.path}
+                to={`/${wikiSlug}/${bl.urlPath}`}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {bl.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

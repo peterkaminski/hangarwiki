@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requestMagicLink, verifyMagicLink, invalidateSession, exportPrivateKey, updateUser } from '../services/auth.js';
+import { getLastConsoleMail } from '../services/email.js';
 import { requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
 
@@ -65,6 +66,17 @@ export async function authRoutes(app: FastifyInstance) {
     reply.clearCookie('session', { path: '/' });
     return { ok: true };
   });
+
+  /** Test helper: get the last magic link URL (console email provider only). */
+  if (config.emailProvider === 'console') {
+    app.get('/api/auth/test/last-magic-link', async (_req, reply) => {
+      const mail = getLastConsoleMail();
+      if (!mail) return reply.status(404).send({ error: 'No email sent yet' });
+      const match = mail.textBody.match(/(http\S+\/api\/auth\/verify\S+)/);
+      if (!match) return reply.status(404).send({ error: 'No verify URL found' });
+      return { url: match[1] };
+    });
+  }
 
   /** Export the user's private key (for git SSH access). */
   app.get('/api/auth/export-key', { preHandler: requireAuth }, async (req, reply) => {

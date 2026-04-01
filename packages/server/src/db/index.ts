@@ -80,6 +80,20 @@ export function initDb() {
       accepted_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS page_links (
+      id TEXT PRIMARY KEY,
+      wiki_id TEXT NOT NULL REFERENCES wikis(id),
+      source_path TEXT NOT NULL,
+      target_title TEXT NOT NULL,
+      target_title_lower TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_page_links_target
+      ON page_links(wiki_id, target_title_lower);
+
+    CREATE INDEX IF NOT EXISTS idx_page_links_source
+      ON page_links(wiki_id, source_path);
+
     CREATE TABLE IF NOT EXISTS page_index (
       id TEXT PRIMARY KEY,
       wiki_id TEXT NOT NULL REFERENCES wikis(id),

@@ -29,6 +29,15 @@ Track things that work but aren't fully tested, hardcoded assumptions, and known
 - [ ] **Magic link email HTML is inline** — Should use proper email templates. Currently just inline HTML string. *(services/auth.ts)*
 - [ ] **Postmark/Resend providers untested against real APIs** — Only console provider exercised. Need integration test with real credentials. *(services/email.ts)*
 
+## Backlinks & Wikilink Indexing
+
+- [ ] **Backlinks cold-start** — The `page_links` table is only populated when a page is saved. Existing pages don't have their links indexed. Need a one-time reindex command or startup scan to backfill. *(services/wiki.ts)*
+- [ ] **Duplicate wikilink regex** — The editor highlighting (`wikilinkHighlight.ts`) and the shared extractor (`wikilink.ts`) have separate regex implementations of the same pattern. Should consolidate or share. *(wikilinkHighlight.ts, shared/markdown/wikilink.ts)*
+
+## E2E Tests
+
+- [ ] **Test data accumulates** — Playwright e2e tests create uniquely-slugged wikis each run but don't clean up. Test wikis pile up in the dev database. Should add teardown or use a separate test DB. *(e2e/wiki-flow.spec.ts)*
+
 ## General
 
 - [ ] **No error handling middleware** — Server has no global error handler or structured error responses yet. *(index.ts)*

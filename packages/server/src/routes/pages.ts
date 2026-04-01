@@ -9,6 +9,7 @@ import {
   resolvePagePath,
   checkAccess,
   getWiki,
+  getBacklinks,
 } from '../services/wiki.js';
 import { titleToFilename } from '../services/paths.js';
 
@@ -63,6 +64,24 @@ export async function pageRoutes(app: FastifyInstance) {
       const limit = parseInt(req.query.limit ?? '50', 10);
       const history = await getPageHistory(wiki, pagePath, limit);
       return { history };
+    },
+  );
+
+  /** Get backlinks for a page (which pages link to this one). */
+  app.get<{ Params: { wiki: string; '*': string } }>(
+    '/api/wikis/:wiki/backlinks/*',
+    async (req, reply) => {
+      const { wiki } = req.params;
+      const urlPath = req.params['*'];
+
+      const canView = await checkAccess(wiki, req.user?.id, 'viewer');
+      if (!canView) return reply.status(403).send({ error: 'Access denied' });
+
+      const pagePath = await resolvePagePath(wiki, urlPath);
+      if (!pagePath) return reply.status(404).send({ error: 'Page not found' });
+
+      const backlinks = await getBacklinks(wiki, pagePath);
+      return { backlinks };
     },
   );
 

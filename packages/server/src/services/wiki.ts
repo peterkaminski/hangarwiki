@@ -3,7 +3,9 @@ import { nanoid } from 'nanoid';
 import { join } from 'node:path';
 import { config } from '../config.js';
 import { getDb } from '../db/index.js';
-import { users, wikis, wikiMembers, pageIndex } from '../db/schema.js';
+import { users, wikis, wikiMembers, pageIndex, pageLinks } from '../db/schema.js';
+import { and } from 'drizzle-orm';
+import { extractLinkTargets } from '@hangarwiki/shared';
 import { GitService, type GitAuthor } from './git.js';
 import { ForgeClient } from './forge.js';
 import { filenameToTitle, filePathToUrlPath } from './paths.js';
@@ -243,6 +245,9 @@ export async function savePage(
   const message = commitMessage ?? (isNew ? `Create ${pagePath}` : `Update ${pagePath}`);
   await git.commit(message, author);
 
+  // Extract and store wikilinks
+  await updatePageLinks(wikiSlug, pagePath, content);
+
   return {
     path: pagePath,
     title: filenameToTitle(pagePath.split('/').pop()!),
@@ -260,6 +265,69 @@ export async function deletePage(
   const git = getWikiGit(wikiSlug);
   await git.deleteFile(pagePath);
   await git.commit(`Delete ${pagePath}`, author);
+
+  // Clean up stored links
+  const wiki = await getWiki(wikiSlug);
+  if (wiki) {
+    const db = getDb();
+    db.delete(pageLinks)
+      .where(and(eq(pageLinks.wikiId, wiki.id), eq(pageLinks.sourcePath, pagePath)))
+      .run();
+  }
+}
+
+/** Update the stored wikilinks for a page (replace all links from this source). */
+async function updatePageLinks(wikiSlug: string, pagePath: string, content: string): Promise<void> {
+  const wiki = await getWiki(wikiSlug);
+  if (!wiki) return;
+
+  const db = getDb();
+  const targets = extractLinkTargets(content);
+
+  // Delete existing links from this page
+  db.delete(pageLinks)
+    .where(and(eq(pageLinks.wikiId, wiki.id), eq(pageLinks.sourcePath, pagePath)))
+    .run();
+
+  // Insert new links
+  for (const target of targets) {
+    db.insert(pageLinks).values({
+      id: nanoid(),
+      wikiId: wiki.id,
+      sourcePath: pagePath,
+      targetTitle: target,
+      targetTitleLower: target.toLowerCase(),
+    }).run();
+  }
+}
+
+/** Get pages that link to a given page (backlinks). */
+export async function getBacklinks(
+  wikiSlug: string,
+  pagePath: string,
+): Promise<PageInfo[]> {
+  const wiki = await getWiki(wikiSlug);
+  if (!wiki) return [];
+
+  const db = getDb();
+  const title = filenameToTitle(pagePath.split('/').pop()!);
+
+  // Find links whose target matches this page's title (case-insensitive)
+  const links = db.select()
+    .from(pageLinks)
+    .where(and(
+      eq(pageLinks.wikiId, wiki.id),
+      eq(pageLinks.targetTitleLower, title.toLowerCase()),
+    ))
+    .all();
+
+  // Get unique source paths and convert to PageInfo
+  const sourcePaths = [...new Set(links.map((l) => l.sourcePath))];
+  return sourcePaths.map((p) => ({
+    path: p,
+    title: filenameToTitle(p.split('/').pop()!),
+    urlPath: filePathToUrlPath(p),
+  }));
 }
 
 /** Get the history of a page. */

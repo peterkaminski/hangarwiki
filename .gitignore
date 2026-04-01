@@ -6,4 +6,5 @@ env.sh
 *.db
 *.db-journal
 *.db-wal
+test-results/
 .DS_Store
