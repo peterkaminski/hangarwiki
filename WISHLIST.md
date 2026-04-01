@@ -136,6 +136,39 @@ External links (`[text](https://...)`) and wikilinks (`[[Page Name]]`) should lo
 
 ---
 
+## Instance identity and branding
+
+The navbar currently says "HangarWiki" and the wiki list says "Your Wikis." A community running their own instance would want their name front and center — "Collective Sense Commons" or "Acme Corp Wiki," not "HangarWiki."
+
+Likely implementation: `INSTANCE_NAME` environment variable (or a `_config` table row) that replaces the default branding. Could extend to a logo/favicon and a custom tagline on the login page.
+
+---
+
+## Instance admin role
+
+We have per-wiki owners, but no one "owns" the instance. A community deployment needs someone who can:
+
+- See and manage all wikis (not just ones they created)
+- Manage user accounts (deactivate, change roles)
+- Set instance-level configuration (name, branding, email allowlist)
+- View usage/activity across the whole instance
+
+Could be as simple as an `is_admin` flag on the user record, set via environment variable on first boot (`ADMIN_EMAIL=alice@example.com`).
+
+---
+
+## Public landing page for logged-out users
+
+Right now, logged-out users see a login form. A community instance might want:
+
+- A welcome page explaining what this wiki is and who it's for
+- A list of public wikis (if any exist)
+- A "request access" flow instead of open signup
+
+This ties into instance branding — the landing page is the front door.
+
+---
+
 ## Mermaid / diagram support
 
 Render Mermaid diagrams in Markdown fenced code blocks. Common in technical wikis.
