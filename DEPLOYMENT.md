@@ -360,6 +360,183 @@ cp /etc/forgejo/app.ini "$BACKUP_DIR/"
 echo "Backup complete: $BACKUP_DIR"
 ```
 
+## Multiple Instances on One Server
+
+A single server can host multiple HangarWiki instances — one per community or organization. Each instance gets its own domain, port, data directory, and SQLite database. They share the same code checkout and the same Forgejo server.
+
+### Architecture
+
+```
+Caddy (automatic HTTPS)
+├── wiki.community-a.example.org  → :4000  (Community A)
+├── wiki.community-b.example.org  → :4001  (Community B)
+├── wiki.community-c.example.org  → :4002  (Community C)
+└── git.example.org                → :3000  (shared Forgejo)
+```
+
+### Forgejo organizations
+
+Forgejo supports organizations (like GitHub). Create one Forgejo organization per HangarWiki instance to keep wiki repos cleanly separated:
+
+- `community-a` org owns all repos for Community A's wikis
+- `community-b` org owns all repos for Community B's wikis
+
+Each organization gets its own API token, so instances can't access each other's repos. Create orgs and tokens via the Forgejo web UI at `https://git.example.org`.
+
+### Per-instance setup
+
+Each instance needs its own env file. Create them under `/home/hangar/instances/`:
+
+```bash
+mkdir -p /home/hangar/instances/{community-a,community-b,community-c}
+```
+
+Example env file for Community A (`/home/hangar/instances/community-a/env.sh`):
+
+```bash
+export PORT=4000
+export HOST=127.0.0.1
+export NODE_ENV=production
+export DATA_DIR=/home/hangar/instances/community-a/data
+export APP_URL=https://wiki.community-a.example.org
+export FORGE_URL=http://127.0.0.1:3000
+export FORGE_API_TOKEN=<community-a-org-token>
+export EMAIL_PROVIDER=postmark
+export POSTMARK_API_TOKEN=<your-postmark-token>
+export EMAIL_FROM=wiki@community-a.example.org
+export ENCRYPTION_KEY=<unique-key-per-instance>
+```
+
+Each instance **must** have its own `ENCRYPTION_KEY` and `DATA_DIR`. Ports increment: 4000, 4001, 4002, etc.
+
+### Systemd service per instance
+
+Use a systemd template unit to avoid repeating yourself:
+
+```bash
+sudo tee /etc/systemd/system/hangarwiki@.service << 'EOF'
+[Unit]
+Description=HangarWiki (%i)
+After=network.target forgejo.service
+
+[Service]
+User=hangar
+Group=hangar
+WorkingDirectory=/home/hangar/hangarwiki
+EnvironmentFile=/home/hangar/instances/%i/env.sh
+ExecStart=/usr/bin/node packages/server/dist/index.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+```
+
+Enable and start each instance:
+
+```bash
+sudo systemctl enable --now hangarwiki@community-a
+sudo systemctl enable --now hangarwiki@community-b
+sudo systemctl enable --now hangarwiki@community-c
+```
+
+Manage them individually:
+
+```bash
+sudo systemctl status hangarwiki@community-a
+sudo journalctl -u hangarwiki@community-b -f
+sudo systemctl restart hangarwiki@community-c
+```
+
+### Caddy configuration
+
+```
+wiki.community-a.example.org {
+    root * /home/hangar/hangarwiki/packages/web/dist
+    try_files {path} /index.html
+    file_server
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+}
+
+wiki.community-b.example.org {
+    root * /home/hangar/hangarwiki/packages/web/dist
+    try_files {path} /index.html
+    file_server
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4001
+    }
+}
+
+wiki.community-c.example.org {
+    root * /home/hangar/hangarwiki/packages/web/dist
+    try_files {path} /index.html
+    file_server
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4002
+    }
+}
+
+git.example.org {
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+All instances serve the same SPA build — only the API backend differs.
+
+### DNS
+
+Add an A/AAAA record for each instance subdomain, all pointing to the same server IP.
+
+### Resource planning
+
+Each Node.js instance uses ~200MB RAM. On a CX22 (4GB):
+
+| Instances | RAM usage (approx) | Fits? |
+|---|---|---|
+| 1-5 | 0.5-1.2 GB | Easily |
+| 5-10 | 1.2-2.2 GB | Comfortable |
+| 10-15 | 2.2-3.2 GB | Tight but works |
+| 15+ | 3.2+ GB | Consider upgrading to CX32 |
+
+Disk is more likely to be the constraint than RAM — 40GB shared across all instances' git repos.
+
+### Backup (multi-instance)
+
+Update the backup script to iterate over all instances:
+
+```bash
+#!/bin/bash
+BACKUP_DIR="/home/hangar/backups/$(date +%Y%m%d)"
+mkdir -p "$BACKUP_DIR"
+
+for INSTANCE_DIR in /home/hangar/instances/*/; do
+    INSTANCE=$(basename "$INSTANCE_DIR")
+    mkdir -p "$BACKUP_DIR/$INSTANCE"
+
+    # SQLite backup
+    sqlite3 "$INSTANCE_DIR/data/hangarwiki.db" ".backup '$BACKUP_DIR/$INSTANCE/hangarwiki.db'"
+
+    # Git repos
+    tar czf "$BACKUP_DIR/$INSTANCE/repos.tar.gz" -C "$INSTANCE_DIR/data" repos/
+
+    # Config
+    cp "$INSTANCE_DIR/env.sh" "$BACKUP_DIR/$INSTANCE/"
+done
+
+# Forgejo
+sudo -u forgejo /usr/local/bin/forgejo dump --config /etc/forgejo/app.ini --file "$BACKUP_DIR/forgejo-dump.zip"
+
+echo "Backup complete: $BACKUP_DIR"
+```
+
 ## Resource Expectations (CX22)
 
 | Resource | Expected usage |
