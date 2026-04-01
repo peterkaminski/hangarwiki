@@ -121,6 +121,15 @@ Could run as a standalone process or be embedded in the existing Fastify server.
 
 ---
 
+## Configurable home and sidebar page names
+
+Set the filename used for the wiki home page and sidebar. Massive Wiki / MarkPub uses `README.md` for home and `Sidebar.md` for sidebar; HangarWiki currently uses `_home.md`. Should be configurable per-wiki with server-wide defaults.
+
+**Per-wiki setting:** stored in wiki record (e.g., `homePageName`, `sidebarPageName`)
+**Server-wide default:** environment variable or config (e.g., `DEFAULT_HOME_PAGE=README.md`)
+
+---
+
 ## Visually differentiate external links vs. wikilinks
 
 External links (`[text](https://...)`) and wikilinks (`[[Page Name]]`) should look different in rendered output so readers can tell at a glance whether a link stays in the wiki or leaves it. Needs design prototyping — common approaches (icon after external links, color differences, underline styles) all have tradeoffs. Worth looking at what MediaWiki, Notion, and Obsidian do, but none are great.

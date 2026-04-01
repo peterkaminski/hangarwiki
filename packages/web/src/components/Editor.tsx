@@ -14,12 +14,18 @@ interface EditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   pages?: PageInfo[];
+  onSave?: () => void;
+  onCancel?: () => void;
 }
 
-export function Editor({ value, onChange, placeholder, pages }: EditorProps) {
+export function Editor({ value, onChange, placeholder, pages, onSave, onCancel }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const autocompleteCompartment = useRef(new Compartment());
+  const onSaveRef = useRef(onSave);
+  const onCancelRef = useRef(onCancel);
+  onSaveRef.current = onSave;
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -36,7 +42,12 @@ export function Editor({ value, onChange, placeholder, pages }: EditorProps) {
         markdown(),
         history(),
         bracketMatching(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
+        keymap.of([
+          { key: 'Mod-s', run: () => { onSaveRef.current?.(); return true; } },
+          { key: 'Escape', run: () => { onCancelRef.current?.(); return true; } },
+          ...defaultKeymap,
+          ...historyKeymap,
+        ]),
         updateListener,
         EditorView.lineWrapping,
         placeholder ? cmPlaceholder(placeholder) : [],

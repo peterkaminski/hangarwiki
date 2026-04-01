@@ -31,8 +31,8 @@ test.describe('End-to-end wiki flow', () => {
     // Should see the wiki list page
     await expect(page.locator('h1')).toContainText('Your Wikis');
 
-    // Should show the user in the nav
-    await expect(page.locator('nav')).toContainText('e2e-test');
+    // Should show the user in the nav (name may have been changed by previous test runs)
+    await expect(page.locator('nav')).toContainText('Sign out');
   });
 
   test('create a wiki', async ({ page }) => {
@@ -190,8 +190,8 @@ test.describe('End-to-end wiki flow', () => {
   test('user settings page works', async ({ page }) => {
     await login(page);
 
-    // Click username in nav to go to settings
-    await page.locator('nav a:has-text("e2e-test")').click();
+    // Click username in nav to go to settings (link is before "Sign out")
+    await page.locator('nav a[href="/settings"]').click();
     await page.waitForURL('**/settings');
 
     await expect(page.locator('h1')).toContainText('Account Settings');

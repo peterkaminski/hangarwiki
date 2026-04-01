@@ -139,6 +139,11 @@ export function PageEdit() {
             value={content}
             onChange={setContent}
             pages={pageList}
+            onSave={handleSave}
+            onCancel={() => {
+              const cleanPath = urlPath?.replace(/\/edit$/, '');
+              navigate(isNew ? `/${wiki}` : `/${wiki}/${cleanPath}`);
+            }}
           />
         </div>
         {showPreview && (

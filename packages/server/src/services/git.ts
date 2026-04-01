@@ -182,6 +182,18 @@ export class GitService {
     return this.git(['diff', `${commitHash}~1`, commitHash]);
   }
 
+  /** Get the diff of a specific file at a specific commit. */
+  async diffFile(commitHash: string, filePath: string): Promise<string> {
+    try {
+      return await this.git(['diff', `${commitHash}~1`, commitHash, '--', filePath]);
+    } catch {
+      // First commit has no parent — show entire file as added
+      return this.git(['show', `${commitHash}:${filePath}`]).then(
+        (content) => content.split('\n').map((l) => `+${l}`).join('\n'),
+      );
+    }
+  }
+
   /** Get the list of files changed in a specific commit. */
   async diffNameStatus(commitHash: string): Promise<GitDiffEntry[]> {
     const output = await this.git(['diff', '--name-status', `${commitHash}~1`, commitHash]);

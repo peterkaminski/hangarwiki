@@ -147,6 +147,7 @@ export async function indexAllPageLinks(wikiSlug: string): Promise<number> {
     try {
       const content = await git.readFile(page.path);
       await updatePageLinks(wikiSlug, page.path, content);
+      await updateSearchIndex(wikiSlug, page.path, content);
       count++;
     } catch {
       // Skip unreadable files
@@ -311,6 +312,9 @@ export async function savePage(
   // Extract and store wikilinks
   await updatePageLinks(wikiSlug, pagePath, content);
 
+  // Update full-text search index
+  await updateSearchIndex(wikiSlug, pagePath, content);
+
   return {
     path: pagePath,
     title: filenameToTitle(pagePath.split('/').pop()!),
@@ -329,13 +333,15 @@ export async function deletePage(
   await git.deleteFile(pagePath);
   await git.commit(`Delete ${pagePath}`, author);
 
-  // Clean up stored links
+  // Clean up stored links and search index
   const wiki = await getWiki(wikiSlug);
   if (wiki) {
     const db = getDb();
     db.delete(pageLinks)
       .where(and(eq(pageLinks.wikiId, wiki.id), eq(pageLinks.sourcePath, pagePath)))
       .run();
+    const sqlite = (db as any).session.client as import('better-sqlite3').Database;
+    sqlite.prepare('DELETE FROM page_fts WHERE wiki_id = ? AND page_path = ?').run(wiki.id, pagePath);
   }
 }
 
@@ -390,6 +396,57 @@ export async function getBacklinks(
     path: p,
     title: filenameToTitle(p.split('/').pop()!),
     urlPath: filePathToUrlPath(p),
+  }));
+}
+
+/** Update the FTS5 search index for a page. */
+async function updateSearchIndex(wikiSlug: string, pagePath: string, content: string): Promise<void> {
+  const wiki = await getWiki(wikiSlug);
+  if (!wiki) return;
+
+  const db = getDb();
+  const sqlite = (db as any).session.client as import('better-sqlite3').Database;
+  const title = filenameToTitle(pagePath.split('/').pop()!);
+
+  // Delete existing entry, then insert fresh
+  sqlite.prepare('DELETE FROM page_fts WHERE wiki_id = ? AND page_path = ?').run(wiki.id, pagePath);
+  sqlite.prepare('INSERT INTO page_fts (wiki_id, page_path, title, content) VALUES (?, ?, ?, ?)').run(
+    wiki.id, pagePath, title, content,
+  );
+}
+
+export interface SearchResult {
+  path: string;
+  title: string;
+  urlPath: string;
+  snippet: string;
+}
+
+/** Full-text search across pages in a wiki. */
+export async function searchPages(
+  wikiSlug: string,
+  query: string,
+  limit = 20,
+): Promise<SearchResult[]> {
+  const wiki = await getWiki(wikiSlug);
+  if (!wiki) return [];
+
+  const db = getDb();
+  const sqlite = (db as any).session.client as import('better-sqlite3').Database;
+
+  const rows = sqlite.prepare(`
+    SELECT page_path, title, snippet(page_fts, 3, '<mark>', '</mark>', '...', 40) as snippet
+    FROM page_fts
+    WHERE wiki_id = ? AND page_fts MATCH ?
+    ORDER BY rank
+    LIMIT ?
+  `).all(wiki.id, query, limit) as Array<{ page_path: string; title: string; snippet: string }>;
+
+  return rows.map((r) => ({
+    path: r.page_path,
+    title: r.title,
+    urlPath: filePathToUrlPath(r.page_path),
+    snippet: r.snippet,
   }));
 }
 

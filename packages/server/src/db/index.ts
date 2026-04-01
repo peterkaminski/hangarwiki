@@ -104,6 +104,17 @@ export function initDb() {
     );
   `);
 
+  // FTS5 virtual table for full-text search
+  sqlite.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS page_fts USING fts5(
+      wiki_id UNINDEXED,
+      page_path UNINDEXED,
+      title,
+      content,
+      tokenize='porter unicode61'
+    );
+  `);
+
   // Lightweight migrations for columns added after initial schema
   try {
     sqlite.exec(`ALTER TABLE wikis ADD COLUMN incipient_link_style TEXT NOT NULL DEFAULT 'create'`);

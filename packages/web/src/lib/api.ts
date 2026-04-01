@@ -52,6 +52,10 @@ export const pages = {
     request<{ history: HistoryEntry[] }>('GET', `/wikis/${wiki}/history/${urlPath}`),
   backlinks: (wiki: string, urlPath: string) =>
     request<{ backlinks: PageInfo[] }>('GET', `/wikis/${wiki}/backlinks/${urlPath}`),
+  search: (wiki: string, query: string) =>
+    request<{ results: SearchResult[] }>('GET', `/wikis/${wiki}/search?q=${encodeURIComponent(query)}`),
+  diff: (wiki: string, hash: string, urlPath: string) =>
+    request<{ diff: string }>('GET', `/wikis/${wiki}/diff/${hash}/${urlPath}`),
 };
 
 // Types
@@ -81,6 +85,13 @@ export interface PageContent {
   title: string;
   content: string;
   urlPath: string;
+}
+
+export interface SearchResult {
+  path: string;
+  title: string;
+  urlPath: string;
+  snippet: string;
 }
 
 export interface HistoryEntry {
