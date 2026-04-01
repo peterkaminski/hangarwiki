@@ -67,8 +67,8 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  /** Test helper: get the last magic link URL (console email provider only). */
-  if (config.emailProvider === 'console') {
+  /** Test helper: get the last magic link URL (dev only — requires console email + non-production). */
+  if (config.emailProvider === 'console' && process.env.NODE_ENV !== 'production') {
     app.get('/api/auth/test/last-magic-link', async (_req, reply) => {
       const mail = getLastConsoleMail();
       if (!mail) return reply.status(404).send({ error: 'No email sent yet' });
