@@ -40,3 +40,22 @@ npm run test         # Run all tests
 - URLs use underscores for spaces (MarkPub-style): `/wiki-slug/My_Cool_Page`
 - Path scrubbing: spaces, `?`, `#`, `%`, `"` → `_` (collapsed). Case-insensitive resolution.
 - Wikilink resolution is case-insensitive, searches across all folders
+
+## Documentation
+
+Root-level docs to keep in sync with the codebase:
+
+| Doc | Purpose |
+|---|---|
+| `PRODUCT.md` | Product definition, feature phases |
+| `ARCHITECTURE.md` | Technical design, directory structure, DB schema |
+| `PROJECT-PLAN.md` | Phased build plan with checkboxes |
+| `WISHLIST.md` | Ideas not yet in the plan; mark items done as they're built |
+| `USER-GUIDE.md` | End-user guide (instance/wiki/page model, workflows) |
+| `DEPLOYMENT.md` | Production deployment (Hetzner, Forgejo, Caddy, multi-instance) |
+| `INSTALLATION.md` | Local dev setup |
+| `DEBT.md` | Known tech debt |
+
+**When building features:** update PROJECT-PLAN.md (check off items) and WISHLIST.md (mark done) in the same commit as the code. If the feature changes the DB schema, routes, or directory structure, update ARCHITECTURE.md too.
+
+**Periodically:** review PRODUCT.md feature lists and ARCHITECTURE.md for drift from reality.
