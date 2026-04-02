@@ -123,74 +123,11 @@ lsof -ti:4000 -ti:5173 | xargs kill
 
 ## Production deployment
 
-HangarWiki is designed to run alongside a Forgejo instance behind a Caddy reverse proxy.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for a complete guide covering:
 
-### 1. Build
-
-```bash
-npm run build
-```
-
-This compiles the server TypeScript and builds the Vite frontend.
-
-### 2. Server setup
-
-Create a systemd service (example):
-
-```ini
-[Unit]
-Description=HangarWiki
-After=network.target
-
-[Service]
-Type=simple
-User=hangarwiki
-WorkingDirectory=/opt/hangarwiki
-ExecStart=/usr/bin/node packages/server/dist/index.js
-EnvironmentFile=/opt/hangarwiki/env.sh
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 3. Caddy configuration
-
-```
-wiki.example.com {
-    reverse_proxy localhost:4000
-}
-
-git.example.com {
-    reverse_proxy localhost:3000
-}
-```
-
-### 4. Email configuration
-
-For production, configure a transactional email provider:
-
-**Postmark** (recommended):
-```bash
-export EMAIL_PROVIDER=postmark
-export POSTMARK_API_TOKEN=your-token-here
-export EMAIL_FROM=wiki@yourdomain.com
-```
-
-**Resend** (alternative):
-```bash
-export EMAIL_PROVIDER=resend
-export RESEND_API_KEY=re_your-key-here
-export EMAIL_FROM=wiki@yourdomain.com
-```
-
-Make sure your sending domain is verified with your email provider.
-
-### 5. Security checklist
-
-- [ ] Set a strong `ENCRYPTION_KEY` (32+ random hex characters)
-- [ ] Use HTTPS (Caddy handles this automatically)
-- [ ] Set `APP_URL` to your actual domain (`https://wiki.example.com`)
-- [ ] Verify email sending works before inviting users
-- [ ] Back up the SQLite database (`data/hangarwiki.db`) regularly
-- [ ] Git repos are stored in `data/repos/` — include in backups
+- Hetzner CX22 server setup with Ubuntu 24.04
+- Forgejo installation and configuration
+- HangarWiki build, configuration, and systemd service
+- Caddy reverse proxy with automatic HTTPS
+- Multiple instances on one server
+- Backup strategy and monitoring

@@ -38,15 +38,15 @@ Identity is built on public-key cryptography — simple enough for non-technical
 - Real-time collaborative editing (CRDT-based, e.g., Yjs + CodeMirror)
 - Conflict resolution UI for git-level conflicts (web merge editor)
 - `![[transclusion]]` rendering
-- Backlinks panel (pages that link to this page)
-- File attachments and images (stored in repo, drag-and-drop upload)
+- ~~Backlinks panel (pages that link to this page)~~ — done
+- ~~File attachments and images (stored in repo, drag-and-drop upload)~~ — done
 - Tags and tag-based navigation
-- Search (full-text across wiki content)
+- ~~Search (full-text across wiki content)~~ — done (FTS5)
 
 ### Phase 3 — Polish & Scale
 - Wiki templates and page templates
 - Custom CSS/theming per wiki
-- Activity feed / recent changes
+- ~~Activity feed / recent changes~~ — done (Recent Changes tab)
 - Notifications (email digest of changes)
 - Admin dashboard (user management, wiki settings)
 - Export (zip of repo, or just `git clone`)

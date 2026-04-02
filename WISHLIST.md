@@ -6,14 +6,9 @@ Ideas and feature requests that aren't yet in [PROJECT-PLAN.md](PROJECT-PLAN.md)
 
 ## Import wiki from git repo
 
-Import an existing Markdown wiki from a git URL or zip upload. This is the fastest way to get real content into HangarWiki.
+Import an existing Markdown wiki from a git URL. This is the fastest way to get real content into HangarWiki.
 
-**Phase 1 — Public repos:**
-- Clone from a public HTTPS URL (e.g., `https://github.com/peterkaminski/arc-vault`)
-- Upload a zip file containing Markdown files
-- Auto-detect page structure (find `.md` files, derive titles, build page index)
-- Create a new wiki backed by the cloned repo
-- Handle repos that are already Obsidian vaults (frontmatter, wikilinks, attachments)
+**Phase 1** (done) — Clone from a public HTTPS URL, auto-detect pages, index wikilinks, create a new wiki backed by the cloned repo.
 
 **Phase 2 — Private repos:**
 - Authenticate with a GitHub/Gitea/Forgejo personal access token
@@ -40,29 +35,26 @@ Per-wiki CSS customization. The incipient link tooltip text is already separated
 
 ---
 
-## Sidebar navigation
-
-A `_sidebar.md` file (or auto-generated from folder structure) that renders as persistent navigation. Common in documentation wikis.
-
----
-
-## Backlinks panel
-
-Show "What links here" on every page — the list of pages containing wikilinks pointing to the current page. One of the most useful wiki navigation features. Already in PROJECT-PLAN.md Phase 2, but worth calling out as high-value.
+## ~~Sidebar navigation~~ (done)
+Implemented — `_sidebar.md` renders as a persistent left sidebar on page views.
 
 ---
 
-## Full-text search
+## ~~Backlinks panel~~ (done)
+Implemented — shows "Pages that link here" on every page.
 
-SQLite FTS5 for fast content search. Index page content on save. Already planned in Phase 2.
+---
+
+## ~~Full-text search~~ (done)
+Implemented — SQLite FTS5 with debounced search UI, indexes page content on save.
 
 ---
 
 ## Keyboard shortcuts in editor
 
-- `Ctrl/Cmd+S` to save
+- `Ctrl/Cmd+S` to save — done
 - `Ctrl/Cmd+K` to insert a wikilink
-- `Escape` to cancel editing
+- `Escape` to cancel editing — done
 - `Ctrl/Cmd+Shift+P` to toggle preview
 
 ---
@@ -79,9 +71,8 @@ Pre-fill new pages with a template based on the folder or page type. E.g., meeti
 
 ---
 
-## Diff view
-
-Show what changed between two versions of a page. Git has the data — this is a UI feature to surface it.
+## ~~Diff view~~ (done)
+Implemented — expandable per-commit diffs in page history.
 
 ---
 

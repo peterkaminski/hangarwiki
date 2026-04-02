@@ -18,16 +18,17 @@ hangarwiki/
 │   │   │   ├── config.ts      # Configuration (env vars)
 │   │   │   ├── routes/        # HTTP route handlers
 │   │   │   │   ├── auth.ts    # Magic link, session management
-│   │   │   │   ├── pages.ts   # Page CRUD, history
-│   │   │   │   ├── wikis.ts   # Wiki lifecycle
-│   │   │   │   ├── attachments.ts
-│   │   │   │   └── webhooks.ts # Forgejo push notifications
+│   │   │   │   ├── pages.ts   # Page CRUD, history, search, backlinks, diff
+│   │   │   │   ├── wikis.ts   # Wiki lifecycle, import, settings
+│   │   │   │   ├── attachments.ts  # File upload + serving from _attachments/
+│   │   │   │   └── webhooks.ts # Forgejo push notifications (planned)
 │   │   │   ├── services/      # Business logic
-│   │   │   │   ├── git.ts     # Git operations (commit, push, pull, merge)
+│   │   │   │   ├── git.ts     # Git operations (commit, push, pull, diff)
 │   │   │   │   ├── forge.ts   # Gitea/Forgejo API client (common + extensions)
-│   │   │   │   ├── markdown.ts # Parsing, wikilink resolution
+│   │   │   │   ├── email.ts   # Email sending (Postmark, Resend, console)
+│   │   │   │   ├── paths.ts   # Filename ↔ title ↔ URL path conversion
 │   │   │   │   ├── auth.ts    # Keypair gen, magic link, sessions
-│   │   │   │   └── wiki.ts    # Wiki management
+│   │   │   │   └── wiki.ts    # Wiki/page management, FTS5 search, backlinks
 │   │   │   ├── db/            # SQLite schema and queries
 │   │   │   │   ├── schema.ts  # Drizzle ORM schema
 │   │   │   │   └── migrations/
@@ -39,17 +40,18 @@ hangarwiki/
 │       │   ├── main.tsx
 │       │   ├── App.tsx
 │       │   ├── components/
-│       │   │   ├── Editor.tsx       # CodeMirror wrapper
-│       │   │   ├── PageView.tsx     # Rendered markdown view
-│       │   │   ├── WikiSidebar.tsx
-│       │   │   ├── BacklinksPanel.tsx
-│       │   │   └── ...
+│       │   │   ├── Editor.tsx            # CodeMirror wrapper (shortcuts, drag-drop upload)
+│       │   │   ├── wikilinkComplete.ts   # [[autocomplete extension
+│       │   │   └── wikilinkHighlight.ts  # Wikilink syntax highlighting extension
 │       │   ├── pages/               # Route-level components
-│       │   │   ├── WikiHome.tsx
-│       │   │   ├── PageEdit.tsx
-│       │   │   ├── PageHistory.tsx
-│       │   │   ├── Login.tsx
-│       │   │   └── Settings.tsx
+│       │   │   ├── WikiList.tsx     # Wiki list + create/import
+│       │   │   ├── WikiHome.tsx     # Page list, search, recent changes
+│       │   │   ├── WikiSettings.tsx # Wiki title, visibility, incipient link style
+│       │   │   ├── PageView.tsx     # Rendered markdown + sidebar + backlinks
+│       │   │   ├── PageEdit.tsx     # Editor with preview
+│       │   │   ├── PageHistory.tsx  # Commit log with inline diffs
+│       │   │   ├── UserSettings.tsx # Display name, SSH key export
+│       │   │   └── Login.tsx
 │       │   ├── hooks/
 │       │   ├── lib/
 │       │   │   ├── api.ts           # API client
@@ -131,13 +133,16 @@ sessions (id, user_id, token_hash, expires_at, created_at)
 magic_links (id, user_id, email, token_hash, expires_at, used_at)
 
 -- Wiki registry
-wikis (id, slug, title, forgejo_repo, visibility, created_at)
+wikis (id, slug, title, forge_owner, forge_repo, visibility, incipient_link_style, created_at)
 
 -- Wiki membership
-wiki_members (wiki_id, user_id, role, invited_at, accepted_at)
+wiki_members (id, wiki_id, user_id, role, accepted_at)
 
--- Search index cache (denormalized from git for fast full-text search)
-page_index (wiki_id, page_path, title, content_text, updated_at)
+-- Wikilink index (for backlinks queries)
+page_links (id, wiki_id, source_path, target_title, target_title_lower)
+
+-- Full-text search (FTS5 virtual table, not managed by Drizzle)
+page_fts (wiki_id, page_path, title, content)  -- tokenize='porter unicode61'
 ```
 
 ### 6. Authentication Flow

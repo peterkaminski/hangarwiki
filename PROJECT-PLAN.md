@@ -145,7 +145,9 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [ ] Security audit of auth flow
 - [ ] Performance profiling (large wikis)
 - [ ] Backup/restore tooling
-- [ ] Documentation (user guide, admin guide, API docs)
+- [x] User guide and deployment guide
+- [ ] Admin guide
+- [ ] API docs
 
 ---
 
