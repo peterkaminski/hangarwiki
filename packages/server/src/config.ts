@@ -25,4 +25,15 @@ export const config = {
 
   // Server-side encryption key for stored private keys
   get encryptionKey() { return process.env.ENCRYPTION_KEY ?? ''; },
+
+  // Webhook secret for verifying Forgejo/Gitea push notifications
+  get webhookSecret() { return process.env.WEBHOOK_SECRET ?? ''; },
+
+  // Forgejo SSH port (for deploy key git access; may differ from default 22 in Docker dev)
+  get forgeSshPort() { return parseInt(process.env.FORGE_SSH_PORT ?? '22', 10); },
+
+  // Server URL reachable by Forgejo (for webhook callbacks)
+  // In dev with Docker: http://host.docker.internal:4000
+  // In production: https://wiki.example.com (behind Caddy)
+  get serverUrl() { return process.env.SERVER_URL ?? `http://localhost:${process.env.PORT ?? '4000'}`; },
 };

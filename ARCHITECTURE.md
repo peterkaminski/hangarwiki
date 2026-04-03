@@ -21,7 +21,7 @@ hangarwiki/
 │   │   │   │   ├── pages.ts   # Page CRUD, history, search, backlinks, diff
 │   │   │   │   ├── wikis.ts   # Wiki lifecycle, import, settings
 │   │   │   │   ├── attachments.ts  # File upload + serving from _attachments/
-│   │   │   │   └── webhooks.ts # Forgejo push notifications (planned)
+│   │   │   │   └── webhooks.ts # Forgejo push notifications (HMAC-verified)
 │   │   │   ├── services/      # Business logic
 │   │   │   │   ├── git.ts     # Git operations (commit, push, pull, diff)
 │   │   │   │   ├── forge.ts   # Gitea/Forgejo API client (common + extensions)

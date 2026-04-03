@@ -8,11 +8,14 @@ import { authRoutes } from './routes/auth.js';
 import { wikiRoutes } from './routes/wikis.js';
 import { pageRoutes } from './routes/pages.js';
 import { attachmentRoutes } from './routes/attachments.js';
+import { webhookRoutes } from './routes/webhooks.js';
 import { optionalAuth } from './middleware/auth.js';
+import { ensureServerKey } from './services/ssh.js';
 
 async function main() {
-  // Initialize database first
+  // Initialize database and server SSH key
   initDb();
+  await ensureServerKey();
 
   const app = Fastify({ logger: true });
 
@@ -39,6 +42,7 @@ async function main() {
   await app.register(wikiRoutes);
   await app.register(pageRoutes);
   await app.register(attachmentRoutes);
+  await app.register(webhookRoutes);
 
   try {
     await app.listen({ port: config.port, host: config.host });

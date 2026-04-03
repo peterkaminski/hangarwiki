@@ -14,7 +14,7 @@ Import an existing Markdown wiki from a git URL. This is the fastest way to get 
 - Authenticate with a GitHub/Gitea/Forgejo personal access token
 - Support `gh` CLI auth (reuse existing token from `gh auth status`)
 - SSH key-based clone using the user's HangarWiki keypair
-- Periodic sync (pull from upstream on a schedule or webhook)
+- ~~Periodic sync (pull from upstream on a schedule or webhook)~~ — done: webhook-based sync on push
 
 **Open questions:**
 - Should import preserve the original git history, or squash into an initial commit?

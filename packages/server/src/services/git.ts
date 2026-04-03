@@ -27,12 +27,19 @@ export interface GitDiffEntry {
  * Wrapper around the git CLI. Each instance is bound to a specific repo directory.
  */
 export class GitService {
+  private defaultEnv: Record<string, string> = {};
+
   constructor(private repoDir: string) {}
+
+  /** Set environment variables that will be included in all git commands. */
+  setEnv(env: Record<string, string>): void {
+    Object.assign(this.defaultEnv, env);
+  }
 
   private async git(args: string[], env?: Record<string, string>): Promise<string> {
     const { stdout } = await exec('git', args, {
       cwd: this.repoDir,
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...this.defaultEnv, ...env },
       maxBuffer: 10 * 1024 * 1024, // 10MB
     });
     return stdout;

@@ -31,8 +31,8 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [x] Register deploy keys (server access)
 - [x] Register user SSH keys
 - [x] Configure push webhooks
-- [ ] Webhook receiver endpoint
-- [ ] Integration tests against local Forgejo (and ideally Gitea)
+- [x] Webhook receiver endpoint
+- [x] Integration tests against local Forgejo (and ideally Gitea)
 
 ### Milestone 1.4 — Database & Auth
 - [x] SQLite setup with Drizzle ORM
@@ -81,7 +81,7 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 
 ### Milestone 1.8 — MVP Integration & Testing
 - [x] End-to-end flow: login -> create wiki -> create page -> edit -> view history
-- [ ] Git push from external client updates wiki in real-time (webhook)
+- [x] Git push from external client updates wiki in real-time (webhook)
 - [ ] Web edit + git push conflict scenario works
 - [x] Basic error states handled in UI
 - [ ] Deploy to a test server alongside Forgejo

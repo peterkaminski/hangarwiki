@@ -8,6 +8,7 @@ import { and } from 'drizzle-orm';
 import { extractLinkTargets } from '@hangarwiki/shared';
 import { GitService, type GitAuthor } from './git.js';
 import { ForgeClient } from './forge.js';
+import { gitSshCommand, getServerPublicKey } from './ssh.js';
 import { filenameToTitle, filePathToUrlPath } from './paths.js';
 
 export interface WikiInfo {
@@ -44,9 +45,11 @@ function wikiRepoPath(slug: string): string {
   return join(config.dataDir, 'repos', slug);
 }
 
-/** Get a GitService for a wiki. */
+/** Get a GitService for a wiki, configured with the server's SSH key. */
 export function getWikiGit(slug: string): GitService {
-  return new GitService(wikiRepoPath(slug));
+  const git = new GitService(wikiRepoPath(slug));
+  git.setEnv({ GIT_SSH_COMMAND: gitSshCommand() });
+  return git;
 }
 
 /** Create a new wiki. */
@@ -90,7 +93,59 @@ export async function createWiki(
   await git.add('.');
   await git.commit('Initialize wiki', { name: 'HangarWiki', email: 'wiki@hangarwiki.local' });
 
+  // Connect to Forgejo if API token is configured
+  if (config.forgeApiToken) {
+    try {
+      await connectWikiToForge(slug, title, visibility === 'private');
+    } catch (err) {
+      console.error(`Failed to connect wiki "${slug}" to Forgejo:`, err);
+      // Wiki is still usable locally without Forgejo
+    }
+  }
+
   return { id, slug, title, visibility, incipientLinkStyle: 'create' as const };
+}
+
+/**
+ * Create a Forgejo repo for a wiki, add it as a remote, and register a push webhook.
+ */
+async function connectWikiToForge(
+  slug: string,
+  title: string,
+  isPrivate: boolean,
+): Promise<void> {
+  const forge = new ForgeClient();
+  const currentUser = await forge.getCurrentUser();
+
+  // Create the Forgejo repo
+  const repo = await forge.createRepo(slug, {
+    description: `HangarWiki: ${title}`,
+    private: isPrivate,
+  });
+
+  // Register the server's public key as a deploy key (read-write)
+  const pubKey = await getServerPublicKey();
+  await forge.addDeployKey(currentUser.login, slug, `hangarwiki-server-${slug}`, pubKey, false);
+
+  // Store forge owner/repo in DB
+  const db = getDb();
+  db.update(wikis)
+    .set({ forgeOwner: currentUser.login, forgeRepo: slug })
+    .where(eq(wikis.slug, slug))
+    .run();
+
+  // Add Forgejo as the remote using SSH URL (authenticated via deploy key)
+  const git = getWikiGit(slug);
+  await git.addRemote('origin', repo.ssh_url);
+
+  // Push the initial commit
+  await git.push();
+
+  // Register webhook if secret is configured
+  if (config.webhookSecret) {
+    const webhookUrl = `${config.serverUrl}/api/webhooks/push`;
+    await forge.createWebhook(currentUser.login, slug, webhookUrl, config.webhookSecret);
+  }
 }
 
 /** Import a wiki from an existing git repository URL. */
@@ -514,6 +569,28 @@ export async function getRecentChanges(
   }
 
   return results;
+}
+
+/**
+ * Pull latest changes from the remote and re-index all pages.
+ * Called by the webhook handler when Forgejo notifies us of a push.
+ */
+export async function syncWikiFromRemote(wikiSlug: string): Promise<void> {
+  const git = getWikiGit(wikiSlug);
+
+  // Only pull if we have a remote configured
+  try {
+    await git.pull();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    // If there's no remote or it fails, log and continue with re-index
+    if (!message.includes('CONFLICT')) {
+      console.error(`Webhook sync pull failed for ${wikiSlug}: ${message}`);
+    }
+  }
+
+  // Re-index all page links and search
+  await indexAllPageLinks(wikiSlug);
 }
 
 /** Get the history of a page. */
