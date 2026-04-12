@@ -3,7 +3,7 @@ import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize';
 import { visit } from 'unist-util-visit';
 import type { Root, Text, Link } from 'mdast';
 import { extractWikilinks, isImageEmbed, type WikilinkToken } from './wikilink.js';
@@ -115,7 +115,7 @@ export async function renderMarkdown(
 
   // Customize sanitization to allow our wikilink classes and transclusion elements
   // rehype-sanitize uses [attrName, ...allowedValues] format for value-restricted attrs
-  const sanitizeSchema = {
+  const sanitizeSchema: SanitizeSchema = {
     ...defaultSchema,
     tagNames: [...(defaultSchema.tagNames ?? []), 'div'],
     attributes: {
