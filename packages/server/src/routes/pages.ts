@@ -10,6 +10,7 @@ import {
   checkAccess,
   getWiki,
   getBacklinks,
+  getOrphanPages,
   searchPages,
   getRecentChanges,
   getWikiGit,
@@ -123,6 +124,20 @@ export async function pageRoutes(app: FastifyInstance) {
 
       const results = await searchPages(wiki, q.trim(), parseInt(limit ?? '20', 10));
       return { results };
+    },
+  );
+
+  /** Get orphan pages (pages with no incoming links). */
+  app.get<{ Params: { wiki: string } }>(
+    '/api/wikis/:wiki/orphans',
+    async (req, reply) => {
+      const { wiki } = req.params;
+
+      const canView = await checkAccess(wiki, req.user?.id, 'viewer');
+      if (!canView) return reply.status(403).send({ error: 'Access denied' });
+
+      const orphans = await getOrphanPages(wiki);
+      return { orphans };
     },
   );
 

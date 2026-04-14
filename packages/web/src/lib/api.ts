@@ -58,6 +58,8 @@ export const pages = {
     request<{ diff: string }>('GET', `/wikis/${wiki}/diff/${hash}/${urlPath}`),
   recent: (wiki: string, limit = 20) =>
     request<{ changes: RecentChange[] }>('GET', `/wikis/${wiki}/recent?limit=${limit}`),
+  orphans: (wiki: string) =>
+    request<{ orphans: PageInfo[] }>('GET', `/wikis/${wiki}/orphans`),
 };
 
 // Attachments

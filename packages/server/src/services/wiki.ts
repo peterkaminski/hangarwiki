@@ -45,6 +45,15 @@ function wikiRepoPath(slug: string): string {
   return join(config.dataDir, 'repos', slug);
 }
 
+/** Push to remote in the background. Logs errors but doesn't block the caller. */
+function pushInBackground(slug: string): void {
+  const git = getWikiGit(slug);
+  git.push().catch((err) => {
+    // Push failures are non-fatal — the commit is safe locally
+    console.error(`Background push failed for "${slug}":`, err);
+  });
+}
+
 /** Get a GitService for a wiki, configured with the server's SSH key. */
 export function getWikiGit(slug: string): GitService {
   const git = new GitService(wikiRepoPath(slug));
@@ -364,6 +373,7 @@ export async function savePage(
 
   const message = commitMessage ?? (isNew ? `Create ${pagePath}` : `Update ${pagePath}`);
   await git.commit(message, author);
+  pushInBackground(wikiSlug);
 
   // Extract and store wikilinks
   await updatePageLinks(wikiSlug, pagePath, content);
@@ -399,6 +409,7 @@ export async function saveAttachment(
   await git.writeBinaryFile(attachmentPath, data);
   await git.add(attachmentPath);
   await git.commit(`Upload ${sanitized}`, author);
+  pushInBackground(wikiSlug);
 
   return {
     path: attachmentPath,
@@ -415,6 +426,7 @@ export async function deletePage(
   const git = getWikiGit(wikiSlug);
   await git.deleteFile(pagePath);
   await git.commit(`Delete ${pagePath}`, author);
+  pushInBackground(wikiSlug);
 
   // Clean up stored links and search index
   const wiki = await getWiki(wikiSlug);
@@ -426,6 +438,31 @@ export async function deletePage(
     const sqlite = (db as any).session.client as import('better-sqlite3').Database;
     sqlite.prepare('DELETE FROM page_fts WHERE wiki_id = ? AND page_path = ?').run(wiki.id, pagePath);
   }
+}
+
+/** Get orphan pages — pages with no incoming links from other pages. */
+export async function getOrphanPages(wikiSlug: string): Promise<PageInfo[]> {
+  const wiki = await getWiki(wikiSlug);
+  if (!wiki) return [];
+
+  const allPages = await listPages(wikiSlug);
+  const db = getDb();
+
+  // Get all link targets in this wiki (lowercase for matching)
+  const allLinks = db.select()
+    .from(pageLinks)
+    .where(eq(pageLinks.wikiId, wiki.id))
+    .all();
+
+  const linkedTitles = new Set(allLinks.map((l) => l.targetTitleLower));
+
+  // A page is orphan if no other page links to it
+  // Exclude special pages (_home, _sidebar, etc.)
+  return allPages.filter((page) => {
+    if (page.path.startsWith('_')) return false;
+    const title = filenameToTitle(page.path.split('/').pop()!);
+    return !linkedTitles.has(title.toLowerCase());
+  });
 }
 
 /** Update the stored wikilinks for a page (replace all links from this source). */

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { pages as pagesApi, wikis as wikisApi, type PageContent, type PageInfo, type Wiki } from '../lib/api';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown, resolveTransclusions } from '../lib/markdown';
 import { useAuth } from '../hooks/useAuth';
 
 // Module-level cache so remounted components show content instantly
@@ -57,11 +57,12 @@ export function PageView() {
       // Fetch sidebar (may not exist — that's fine)
       pagesApi.get(wikiSlug, '_sidebar').catch(() => null),
     ]).then(async ([{ page: newPage }, { pages: allPages }, { wiki }, { backlinks: bl }, sidebarResult]) => {
-      const rendered = await renderMarkdown(
+      let rendered = await renderMarkdown(
         newPage.content,
         `/${wikiSlug}`,
         allPages,
       );
+      rendered = await resolveTransclusions(rendered, wikiSlug, allPages);
       const finalHtml = applyIncipientLinkStyle(rendered, wiki, wikiSlug);
       pageCache.set(key, { page: newPage, html: finalHtml });
       setPage(newPage);

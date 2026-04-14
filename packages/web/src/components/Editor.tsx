@@ -7,6 +7,7 @@ import { bracketMatching } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { wikilinkAutocomplete } from './wikilinkComplete';
 import { wikilinkHighlight } from './wikilinkHighlight';
+import { imagePreview } from './imagePreview';
 import type { PageInfo } from '../lib/api';
 
 interface EditorProps {
@@ -14,12 +15,13 @@ interface EditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   pages?: PageInfo[];
+  wikiSlug?: string;
   onSave?: () => void;
   onCancel?: () => void;
   onUpload?: (file: File) => Promise<string | null>;
 }
 
-export function Editor({ value, onChange, placeholder, pages, onSave, onCancel, onUpload }: EditorProps) {
+export function Editor({ value, onChange, placeholder, pages, wikiSlug, onSave, onCancel, onUpload }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const autocompleteCompartment = useRef(new Compartment());
@@ -56,6 +58,7 @@ export function Editor({ value, onChange, placeholder, pages, onSave, onCancel, 
         EditorView.lineWrapping,
         placeholder ? cmPlaceholder(placeholder) : [],
         wikilinkHighlight(),
+        wikiSlug ? imagePreview(wikiSlug) : [],
         autocompleteCompartment.current.of(
           pages?.length ? wikilinkAutocomplete(pages) : [],
         ),

@@ -100,7 +100,7 @@ export class ForgeClient {
       name,
       description: options?.description ?? '',
       private: options?.private ?? false,
-      auto_init: true,
+      auto_init: false,
       default_branch: 'main',
     });
   }

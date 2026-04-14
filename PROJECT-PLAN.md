@@ -104,18 +104,18 @@ A single-user-testable wiki that can create pages, edit them in the browser, and
 - [ ] Resolve and commit
 
 ### Milestone 2.3 — Rich Content
-- [ ] Transclusion rendering (inline embedded pages)
+- [x] Transclusion rendering (inline embedded pages)
 - [x] Backlinks panel in page view
 - [ ] Tags: parse from frontmatter, tag index page
 - [x] File attachments: drag-and-drop upload in editor
-- [ ] Image preview in editor
+- [x] Image preview in editor
 - [x] Full-text search (SQLite FTS5)
 
 ### Milestone 2.4 — Navigation & Discovery
 - [x] Sidebar navigation (`_sidebar.md` or auto-generated)
 - [x] Recently changed pages
 - [ ] Graph view (page link visualization) — stretch goal
-- [ ] Orphan pages (no incoming links)
+- [x] Orphan pages (no incoming links)
 - [x] Search with result highlighting
 
 ---

@@ -13,7 +13,8 @@ export function WikiHome() {
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [recentChanges, setRecentChanges] = useState<RecentChange[]>([]);
-  const [activeTab, setActiveTab] = useState<'pages' | 'recent'>('pages');
+  const [orphanPages, setOrphanPages] = useState<PageInfo[]>([]);
+  const [activeTab, setActiveTab] = useState<'pages' | 'recent' | 'orphans'>('pages');
 
   useEffect(() => {
     if (!wikiSlug) return;
@@ -22,10 +23,12 @@ export function WikiHome() {
       wikisApi.get(wikiSlug),
       pagesApi.list(wikiSlug),
       pagesApi.recent(wikiSlug),
-    ]).then(([{ wiki }, { pages }, { changes }]) => {
+      pagesApi.orphans(wikiSlug),
+    ]).then(([{ wiki }, { pages }, { changes }, { orphans }]) => {
       setWiki(wiki);
       setPageList(pages);
       setRecentChanges(changes);
+      setOrphanPages(orphans);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [wikiSlug]);
@@ -150,6 +153,18 @@ export function WikiHome() {
             >
               Recent Changes
             </button>
+            {orphanPages.length > 0 && (
+              <button
+                onClick={() => setActiveTab('orphans')}
+                className={`pb-2 text-sm font-medium border-b-2 ${
+                  activeTab === 'orphans'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Orphans ({orphanPages.length})
+              </button>
+            )}
           </div>
 
           {activeTab === 'pages' ? (
@@ -173,6 +188,28 @@ export function WikiHome() {
               {regularPages.length === 0 && (
                 <p className="text-gray-500 mt-4">No pages yet. Create one to get started.</p>
               )}
+            </>
+          ) : activeTab === 'orphans' ? (
+            <>
+              <p className="text-sm text-gray-500 mb-3">
+                Pages with no incoming links from other pages.
+              </p>
+              <div className="space-y-1">
+                {orphanPages.map((page) => (
+                  <Link
+                    key={page.path}
+                    to={`/${wikiSlug}/${page.urlPath}`}
+                    className="block px-3 py-2 rounded hover:bg-gray-50 text-blue-600 hover:text-blue-800"
+                  >
+                    {page.title}
+                    {page.path.includes('/') && (
+                      <span className="ml-2 text-xs text-gray-400">
+                        {page.path.split('/').slice(0, -1).join('/')}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
             </>
           ) : (
             <div className="space-y-1">

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { pages as pagesApi, attachments as attachmentsApi, type PageInfo } from '../lib/api';
 import { Editor } from '../components/Editor';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown, resolveTransclusions } from '../lib/markdown';
 
 export function PageEdit() {
   const { wiki, '*': urlPath } = useParams<{ wiki: string; '*': string }>();
@@ -38,10 +38,11 @@ export function PageEdit() {
 
   const updatePreview = useCallback(async (md: string) => {
     if (showPreview && wiki) {
-      const html = await renderMarkdown(md, `/${wiki}`);
+      let html = await renderMarkdown(md, `/${wiki}`, pageList);
+      html = await resolveTransclusions(html, wiki, pageList);
       setPreview(html);
     }
-  }, [showPreview, wiki]);
+  }, [showPreview, wiki, pageList]);
 
   useEffect(() => {
     updatePreview(content);
@@ -139,6 +140,7 @@ export function PageEdit() {
             value={content}
             onChange={setContent}
             pages={pageList}
+            wikiSlug={wiki}
             onSave={handleSave}
             onCancel={() => {
               const cleanPath = urlPath?.replace(/\/edit$/, '');
