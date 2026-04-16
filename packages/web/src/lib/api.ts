@@ -37,6 +37,7 @@ export const wikis = {
     request<{ wiki: Wiki }>('PATCH', `/wikis/${slug}`, updates),
   import: (url: string, slug: string, title: string, visibility?: 'public' | 'private') =>
     request<{ wiki: Wiki }>('POST', '/wikis/import', { url, slug, title, visibility }),
+  delete: (slug: string) => request<{ ok: boolean }>('DELETE', `/wikis/${slug}`),
 };
 
 // Pages
@@ -94,6 +95,7 @@ export interface Wiki {
   title: string;
   visibility: 'public' | 'private';
   incipientLinkStyle: 'create' | 'highlight';
+  sourceUrl?: string | null;
 }
 
 export interface PageInfo {

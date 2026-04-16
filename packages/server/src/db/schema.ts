@@ -34,6 +34,9 @@ export const wikis = sqliteTable('wikis', {
   forgeRepo: text('forge_repo').notNull(), // repo name on Forgejo/Gitea
   visibility: text('visibility').notNull().$type<'public' | 'private'>().default('public'),
   incipientLinkStyle: text('incipient_link_style').notNull().$type<'create' | 'highlight'>().default('create'),
+  sourceUrl: text('source_url'), // original git URL for imported/forked wikis
+  sourceForkedAt: text('source_forked_at'), // ISO timestamp of when import happened
+  sourceForkCommit: text('source_fork_commit'), // commit hash HEAD pointed at when forked
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

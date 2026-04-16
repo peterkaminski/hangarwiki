@@ -116,11 +116,11 @@ export function initDb() {
   `);
 
   // Lightweight migrations for columns added after initial schema
-  try {
-    sqlite.exec(`ALTER TABLE wikis ADD COLUMN incipient_link_style TEXT NOT NULL DEFAULT 'create'`);
-  } catch {
-    // Column already exists — ignore
-  }
+  const addColumn = (sql: string) => { try { sqlite.exec(sql); } catch { /* already exists */ } };
+  addColumn(`ALTER TABLE wikis ADD COLUMN incipient_link_style TEXT NOT NULL DEFAULT 'create'`);
+  addColumn(`ALTER TABLE wikis ADD COLUMN source_url TEXT`);
+  addColumn(`ALTER TABLE wikis ADD COLUMN source_forked_at TEXT`);
+  addColumn(`ALTER TABLE wikis ADD COLUMN source_fork_commit TEXT`);
 
   return db;
 }

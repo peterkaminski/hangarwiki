@@ -12,6 +12,9 @@ export function WikiSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteSlugInput, setDeleteSlugInput] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!wikiSlug) return;
@@ -153,6 +156,63 @@ export function WikiSettings() {
         <div className="text-sm text-gray-500">
           <strong>Slug:</strong> {wiki?.slug} (cannot be changed)
         </div>
+      </div>
+
+      {/* Danger zone */}
+      <div className="mt-10 pt-6 border-t border-red-200">
+        <h2 className="text-lg font-semibold text-red-700 mb-2">Danger Zone</h2>
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium"
+          >
+            Delete this wiki
+          </button>
+        ) : (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
+            <p className="text-sm text-red-800">
+              This will permanently delete the wiki, all its pages, and the Forgejo repository.
+              This action cannot be undone.
+            </p>
+            <p className="text-sm text-red-800 font-medium">
+              Type <code className="bg-red-100 px-1 rounded">{wikiSlug}</code> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteSlugInput}
+              onChange={(e) => setDeleteSlugInput(e.target.value)}
+              className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm"
+              placeholder={wikiSlug}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!wikiSlug) return;
+                  setDeleting(true);
+                  setError('');
+                  try {
+                    await wikisApi.delete(wikiSlug);
+                    navigate('/');
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Delete failed');
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleteSlugInput !== wikiSlug || deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+              >
+                {deleting ? 'Deleting...' : 'Permanently delete wiki'}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteSlugInput(''); }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

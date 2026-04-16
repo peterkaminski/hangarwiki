@@ -16,10 +16,14 @@ Import an existing Markdown wiki from a git URL. This is the fastest way to get 
 - SSH key-based clone using the user's HangarWiki keypair
 - ~~Periodic sync (pull from upstream on a schedule or webhook)~~ — done: webhook-based sync on push
 
+**Phase 3 — Upstream sync:**
+- Pull new commits from upstream (manual or scheduled)
+- Push/PR local changes back to the original repo
+
 **Open questions:**
-- Should import preserve the original git history, or squash into an initial commit?
+- Should import preserve the original git history, or squash into an initial commit? (Currently: preserves full history)
 - How to handle repos with non-Markdown files (images, PDFs, config files)?
-- Should the wiki maintain an upstream remote for ongoing sync?
+- ~~Should the wiki maintain an upstream remote for ongoing sync?~~ — done: imported wikis store the source URL, fork date, and fork commit; the original remote is kept as `upstream`
 
 ---
 

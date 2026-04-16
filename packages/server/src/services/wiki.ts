@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { join } from 'node:path';
+import { rmSync } from 'node:fs';
 import { config } from '../config.js';
 import { getDb } from '../db/index.js';
 import { users, wikis, wikiMembers, pageIndex, pageLinks } from '../db/schema.js';
@@ -17,6 +18,7 @@ export interface WikiInfo {
   title: string;
   visibility: 'public' | 'private';
   incipientLinkStyle: 'create' | 'highlight';
+  sourceUrl?: string | null;
 }
 
 export interface PageInfo {
@@ -172,9 +174,16 @@ export async function importWiki(
   const git = getWikiGit(slug);
   await git.clone(url);
 
+  // Capture fork point before reconfiguring remotes
+  const forkCommit = await git.getHead();
+  const forkedAt = new Date().toISOString();
+
   // Set local git config for future commits
   await git.setConfig('user.name', 'HangarWiki');
   await git.setConfig('user.email', 'wiki@hangarwiki.local');
+
+  // Rename the source remote to "upstream" and connect to local Forge as "origin"
+  await git.renameRemote('origin', 'upstream');
 
   // Create the wiki record
   db.insert(wikis).values({
@@ -184,6 +193,9 @@ export async function importWiki(
     forgeOwner: '',
     forgeRepo: '',
     visibility,
+    sourceUrl: url,
+    sourceForkedAt: forkedAt,
+    sourceForkCommit: forkCommit,
   }).run();
 
   // Add owner as member
@@ -195,10 +207,20 @@ export async function importWiki(
     acceptedAt: new Date().toISOString(),
   }).run();
 
+  // Connect to Forgejo if API token is configured
+  if (config.forgeApiToken) {
+    try {
+      await connectWikiToForge(slug, title, visibility === 'private');
+    } catch (err) {
+      console.error(`Failed to connect imported wiki "${slug}" to Forgejo:`, err);
+      // Wiki is still usable locally without Forgejo
+    }
+  }
+
   // Index all wikilinks in existing pages
   await indexAllPageLinks(slug);
 
-  return { id, slug, title, visibility, incipientLinkStyle: 'create' as const };
+  return { id, slug, title, visibility, incipientLinkStyle: 'create' as const, sourceUrl: url };
 }
 
 /** Scan all markdown pages in a wiki and populate the page_links table. */
@@ -236,6 +258,7 @@ export async function listWikis(userId: string): Promise<WikiInfo[]> {
     title: m.wikis.title,
     visibility: m.wikis.visibility as 'public' | 'private',
     incipientLinkStyle: (m.wikis.incipientLinkStyle as 'create' | 'highlight') ?? 'create',
+    sourceUrl: m.wikis.sourceUrl,
   }));
 }
 
@@ -250,6 +273,7 @@ export async function getWiki(slug: string): Promise<WikiInfo | null> {
     title: wiki.title,
     visibility: wiki.visibility as 'public' | 'private',
     incipientLinkStyle: (wiki.incipientLinkStyle as 'create' | 'highlight') ?? 'create',
+    sourceUrl: wiki.sourceUrl,
   };
 }
 
@@ -273,6 +297,36 @@ export async function updateWiki(
   }
 
   return getWiki(slug);
+}
+
+/** Delete a wiki and all associated data (DB rows, Forgejo repo, local git repo). */
+export async function deleteWiki(slug: string): Promise<void> {
+  const db = getDb();
+  const wiki = db.select().from(wikis).where(eq(wikis.slug, slug)).get();
+  if (!wiki) throw new Error('Wiki not found');
+
+  // Delete Forgejo repo if connected
+  if (wiki.forgeOwner && wiki.forgeRepo) {
+    try {
+      const forge = new ForgeClient();
+      await forge.deleteRepo(wiki.forgeOwner, wiki.forgeRepo);
+    } catch (err) {
+      console.error(`Failed to delete Forgejo repo for wiki "${slug}":`, err);
+      // Continue with local cleanup even if Forge is unreachable
+    }
+  }
+
+  // Delete DB rows in FK-safe order
+  const sqlite = (db as any).session.client as import('better-sqlite3').Database;
+  sqlite.prepare('DELETE FROM page_fts WHERE wiki_id = ?').run(wiki.id);
+  db.delete(pageLinks).where(eq(pageLinks.wikiId, wiki.id)).run();
+  db.delete(pageIndex).where(eq(pageIndex.wikiId, wiki.id)).run();
+  db.delete(wikiMembers).where(eq(wikiMembers.wikiId, wiki.id)).run();
+  db.delete(wikis).where(eq(wikis.id, wiki.id)).run();
+
+  // Delete local git repo
+  const repoPath = wikiRepoPath(slug);
+  rmSync(repoPath, { recursive: true, force: true });
 }
 
 /** Check if a user has at least the given role on a wiki. */

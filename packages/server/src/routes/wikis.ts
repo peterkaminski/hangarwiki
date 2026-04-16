@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
-import { createWiki, importWiki, listWikis, getWiki, updateWiki, checkAccess } from '../services/wiki.js';
+import { createWiki, importWiki, listWikis, getWiki, updateWiki, deleteWiki, checkAccess } from '../services/wiki.js';
 
 export async function wikiRoutes(app: FastifyInstance) {
   /** List wikis the current user has access to. */
@@ -111,6 +111,21 @@ export async function wikiRoutes(app: FastifyInstance) {
       if (!wiki) return reply.status(404).send({ error: 'Wiki not found' });
 
       return { wiki };
+    },
+  );
+
+  /** Delete a wiki. Owner only. */
+  app.delete<{ Params: { wiki: string } }>(
+    '/api/wikis/:wiki',
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const hasAccess = await checkAccess(req.params.wiki, req.user!.id, 'owner');
+      if (!hasAccess) {
+        return reply.status(403).send({ error: 'Only the wiki owner can delete a wiki' });
+      }
+
+      await deleteWiki(req.params.wiki);
+      return { ok: true };
     },
   );
 }

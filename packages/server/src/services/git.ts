@@ -75,6 +75,17 @@ export class GitService {
     await this.git(['remote', 'add', name, url]);
   }
 
+  /** Rename a remote. */
+  async renameRemote(oldName: string, newName: string): Promise<void> {
+    await this.git(['remote', 'rename', oldName, newName]);
+  }
+
+  /** Get the current HEAD commit hash. */
+  async getHead(): Promise<string> {
+    const output = await this.git(['rev-parse', 'HEAD']);
+    return output.trim();
+  }
+
   /** List all files tracked by git (relative paths). */
   async listFiles(path?: string): Promise<string[]> {
     const args = ['ls-files'];
