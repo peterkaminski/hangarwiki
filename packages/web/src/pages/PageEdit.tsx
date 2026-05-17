@@ -144,7 +144,7 @@ export function PageEdit() {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           className="w-full px-3 py-2 border rounded-lg mb-4 text-lg"
-          autoFocus
+          autoFocus={!newTitle}
         />
       )}
 
@@ -214,6 +214,7 @@ export function PageEdit() {
             onChange={setContent}
             pages={pageList}
             wikiSlug={wiki}
+            focusOnMount={isNew && !!newTitle}
             onSave={handleSave}
             onCancel={() => {
               const cleanPath = urlPath?.replace(/\/edit$/, '');
