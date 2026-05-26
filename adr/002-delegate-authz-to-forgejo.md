@@ -1,5 +1,5 @@
 # ADR 002: Delegate Authorization to Forgejo
-**Date:** 2026-05-26 **Status:** Proposed (one open question pending — see below)
+**Date:** 2026-05-26 **Status:** Accepted (open question resolved by [ADR 003](./003-power-user-direct-access.md): Option B adopted)
 ## Context
 HangarWiki shipped with a permissions model that lives in its own database: `wiki_members (wiki_id, user_id, role, …)`, with `Owner / Editor / Viewer` roles and per-wiki membership. The original `PRODUCT.md:21` framing was "runs alongside Forgejo … but has its own auth and UI." Forgejo's role was storage, webhook source, and a power-user `git push` escape hatch.
 
@@ -94,6 +94,8 @@ Two options:
   
 
 Pete is leaning Option B but the decision is open. The implementation detail blocks little — both options are layerable on top of the delegate-everything-else design recorded here — so this ADR can be accepted in principle, with the power-user-access mechanism deferred to a follow-up ADR.
+
+**Resolved 2026-05-26:** [ADR 003](./003-power-user-direct-access.md) adopts Option B.
 ## Alternatives Considered
 1. **Restore the original membership-driven design** (fix the auto-grant shortcut, leave `wiki_members` as the source of truth). Would address the immediate bug without the structural shift. Rejected because it leaves the per-user Forgejo identity story tangled and the power-user `git push` path awkward (HangarWiki has to store SSH keys, manage them per-user, sync them to Forgejo as a side effect of writing).
   
