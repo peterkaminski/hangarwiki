@@ -7,12 +7,12 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./src/index.ts",
-      "types": "./src/index.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./markdown": {
-      "import": "./src/markdown/index.ts",
-      "types": "./src/markdown/index.ts"
+      "import": "./dist/markdown/index.js",
+      "types": "./dist/markdown/index.d.ts"
     }
   },
   "scripts": {

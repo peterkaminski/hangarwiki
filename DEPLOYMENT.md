@@ -1,12 +1,12 @@
 # HangarWiki — Deployment Guide
 
-Deploy HangarWiki and Forgejo on a Hetzner CX22 (2 vCPU, 4GB RAM, 40GB SSD) running Ubuntu 24.04.
+Deploy HangarWiki and Forgejo on a Hetzner CX23 (2 vCPU, 4GB RAM, 40GB SSD) running Ubuntu 24.04.
 
 ## Server Setup
 
 ### 1. Create the server
 
-- Hetzner Cloud Console: create a CX22 with Ubuntu 24.04
+- Hetzner Cloud Console: create a CX23 with Ubuntu 24.04
 - Enable IPv4 ($0.60/mo) — IPv6-only causes reachability issues for some users
 - Add your SSH key during creation
 - Note the server's IPv4 and IPv6 addresses
@@ -24,6 +24,8 @@ git.example.org     AAAA → <server-ipv6>
 
 `wiki.example.org` serves HangarWiki. `git.example.org` serves Forgejo. Caddy handles HTTPS automatically for both.
 
+NOTE: **If using Cloudflare:** set the `git.example.org` A/AAAA records to **DNS only** (gray cloud), not Proxied. Forgejo's SSH server runs on port 2222, and Cloudflare's proxy only forwards HTTP/HTTPS — proxying the `git` records will silently block all git push operations with a connection timeout. The `wiki.example.org` records can be proxied normally.
+
 ### 3. Initial server config
 
 ```bash
@@ -36,6 +38,13 @@ apt update && apt upgrade -y
 adduser --disabled-password hangar
 usermod -aG sudo hangar
 
+# Copy SSH key to hangar user home directory
+mkdir -p /home/hangar/.ssh
+cp /root/.ssh/authorized_keys /home/hangar/.ssh/
+chown -R hangar:hangar /home/hangar/.ssh
+chmod 700 /home/hangar/.ssh
+chmod 600 /home/hangar/.ssh/authorized_keys
+
 # Allow passwordless sudo (optional, for convenience during setup)
 echo "hangar ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/hangar
 
@@ -43,6 +52,7 @@ echo "hangar ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/hangar
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow 2222/tcp   # Forgejo SSH
 ufw enable
 
 # Reboot to pick up kernel updates
@@ -75,7 +85,7 @@ sudo apt install -y caddy
 
 ```bash
 # Download latest Forgejo binary
-FORGEJO_VERSION="10.0.1"  # Check https://codeberg.org/forgejo/forgejo/releases for latest
+FORGEJO_VERSION="15.0.2"  # Check https://codeberg.org/forgejo/forgejo/releases for latest
 wget -O /tmp/forgejo "https://codeberg.org/forgejo/forgejo/releases/download/v${FORGEJO_VERSION}/forgejo-${FORGEJO_VERSION}-linux-amd64"
 sudo install /tmp/forgejo /usr/local/bin/forgejo
 
@@ -156,19 +166,29 @@ sudo systemctl enable --now forgejo
 ```
 
 ### 8. Create the Forgejo admin user and API token
+NOTE: create and save the admin user password; it is needed to create
+the Forgejo API token in step 12. The filename is intentionally loud
+so that a future reader notices a plaintext password sitting on disk
+and moves it into a password manager.
+
+```bash
+openssl rand -base64 24 | sudo tee /root/DANGER-forgejo-admin-password-move-to-password-manager.txt > /dev/null
+sudo chmod 400 /root/DANGER-forgejo-admin-password-move-to-password-manager.txt
+```
 
 ```bash
 # Create admin user (used by HangarWiki for repo management)
+pw=$(sudo tr -d '\n' < /root/DANGER-forgejo-admin-password-move-to-password-manager.txt)
 sudo -u forgejo /usr/local/bin/forgejo admin user create \
   --config /etc/forgejo/app.ini \
   --username hangarwiki \
-  --password "$(openssl rand -base64 24)" \
+  --password "$pw" \
   --email wiki@example.org \
   --admin
 
-# Generate an API token for HangarWiki
-# Log into Forgejo at https://git.example.org after Caddy is set up,
-# then: Settings → Applications → Generate New Token (with repo scope)
+# Generate an API token for HangarWiki once Caddy is set up. (Step 12.)
+# Log into Forgejo at https://git.example.org after Caddy is set up as admin user "hangarwiki",
+# then: Settings → Applications → Generate New Token (with repository and user Read+Write scope)
 ```
 
 ## HangarWiki Setup
@@ -181,6 +201,8 @@ cd /home/hangar
 git clone https://github.com/peterkaminski/hangarwiki.git
 cd hangarwiki
 npm install
+# fix non-breaking `npm audit` vulnerabilities
+npm audit fix
 npm run build
 ```
 
@@ -189,29 +211,32 @@ npm run build
 ```bash
 tee /home/hangar/hangarwiki/env.sh << 'ENVSH'
 # Server
-export PORT=4000
-export HOST=127.0.0.1
-export NODE_ENV=production
-export DATA_DIR=/home/hangar/hangarwiki/data
+PORT=4000
+HOST=127.0.0.1
+NODE_ENV=production
+DATA_DIR=/home/hangar/hangarwiki/data
 
 # App URL (must match the Caddy domain)
-export APP_URL=https://wiki.example.org
+APP_URL=https://wiki.example.org
 
 # Forgejo
-export FORGE_URL=http://127.0.0.1:3000
-export FORGE_API_TOKEN=<your-forgejo-api-token>
+FORGE_URL=http://127.0.0.1:3000
+FORGE_API_TOKEN=<your-forgejo-api-token>
+FORGE_SSH_PORT=2222
 
 # Email — choose one provider
-export EMAIL_PROVIDER=postmark
-export POSTMARK_API_TOKEN=<your-postmark-token>
-export EMAIL_FROM=wiki@example.org
+EMAIL_PROVIDER=postmark
+POSTMARK_API_TOKEN=<your-postmark-token>
+EMAIL_FROM=wiki@example.org
 
 # Encryption key for stored private keys (generate once, never lose it)
-export ENCRYPTION_KEY=<generate-with: openssl rand -hex 32>
+ENCRYPTION_KEY=<generate-with: openssl rand -hex 32>
 ENVSH
 
 chmod 600 /home/hangar/hangarwiki/env.sh
 ```
+
+**Note:** On a Ubuntu system use bare `KEY=VALUE` format — no `export`. `systemd`’s `EnvironmentFile` parser is not a shell and will silently ignore any line prefixed with `export`, meaning none of the variables will be set. If you previously sourced `env.sh` on macOS for local dev, strip the exports before deploying: `sed -i 's/^export //' env.sh`
 
 Generate the encryption key:
 
@@ -258,10 +283,30 @@ curl -s http://127.0.0.1:4000/api/health
 
 ### 12. Configure Caddy
 
+Caddy serves the React SPA directly from the built output and proxies `/api/*` to Node. This is required — a plain reverse proxy to port 4000 will return a blank page because Node only handles API routes.
+
+Grant Caddy permission to read the files (it runs as a separate system user and cannot traverse `hangar`'s home directory by default):
+
+```bash
+chmod o+x /home/hangar
+chmod -R o+r /home/hangar/hangarwiki/packages/web/dist
+```
+
+Then write the Caddyfile:
+
 ```bash
 sudo tee /etc/caddy/Caddyfile << 'EOF'
 wiki.example.org {
-    reverse_proxy 127.0.0.1:4000
+    root * /home/hangar/hangarwiki/packages/web/dist
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:4000
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
 }
 
 git.example.org {
@@ -274,29 +319,11 @@ sudo systemctl reload caddy
 
 Caddy automatically provisions HTTPS certificates via Let's Encrypt. No further TLS configuration needed.
 
+**NOTE:** Set up Forgejo API token; see Step 8.
+
 ## Serving the Frontend
 
-HangarWiki in production needs to serve the built React SPA. The simplest approach: build the frontend and have the server serve it as static files.
-
-### 13. Build and serve the frontend
-
-The Vite build outputs to `packages/web/dist/`. Configure the server to serve these files and fall back to `index.html` for client-side routing.
-
-If the server doesn't yet have a static file handler for the SPA, you can use Caddy to serve it directly:
-
-```
-wiki.example.org {
-    root * /home/hangar/hangarwiki/packages/web/dist
-    try_files {path} /index.html
-    file_server
-
-    handle /api/* {
-        reverse_proxy 127.0.0.1:4000
-    }
-}
-```
-
-This serves the SPA from Caddy and proxies `/api/*` to the Node.js server.
+The Vite build outputs to `packages/web/dist/`. Caddy serves these files and falls back to `index.html` for client-side routing, proxying only `/api/*` to the Node.js server. See step 12 above.
 
 ## Updates
 
@@ -309,6 +336,8 @@ npm install
 npm run build
 sudo systemctl restart hangarwiki
 ```
+
+`npm run build` compiles all three packages in order: `packages/shared` → `packages/server` → `packages/web`. All three must be built; skipping shared will cause the server to fail at startup with a module-not-found error.
 
 ## Monitoring
 
@@ -456,31 +485,40 @@ sudo systemctl restart hangarwiki@community-c
 ```
 wiki.community-a.example.org {
     root * /home/hangar/hangarwiki/packages/web/dist
-    try_files {path} /index.html
-    file_server
 
     handle /api/* {
         reverse_proxy 127.0.0.1:4000
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
     }
 }
 
 wiki.community-b.example.org {
     root * /home/hangar/hangarwiki/packages/web/dist
-    try_files {path} /index.html
-    file_server
 
     handle /api/* {
         reverse_proxy 127.0.0.1:4001
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
     }
 }
 
 wiki.community-c.example.org {
     root * /home/hangar/hangarwiki/packages/web/dist
-    try_files {path} /index.html
-    file_server
 
     handle /api/* {
         reverse_proxy 127.0.0.1:4002
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
     }
 }
 
