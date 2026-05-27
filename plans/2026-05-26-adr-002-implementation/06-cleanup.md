@@ -4,35 +4,37 @@ After Phase 5, `wiki_members` and the auto-grant code are unused but still in th
 
 ## Changes
 
-### 1. Stop writing `wiki_members`
+### 1. Clean schema definition — no DB-level DROPs or ALTERs
 
-Grep for `wikiMembers` and `wiki_members`. Expected remaining writes (legacy from Phase 3): in `createWiki` / `importWiki`. Delete the inserts. The `wiki_members` references in `deleteWiki` (FK-safe cascade) stay until the table is dropped — they're a no-op if the table is empty.
+The schema in `db/schema.ts` and the `CREATE TABLE` statements in `db/index.ts` are rewritten to their final ADR-002 shape:
 
-### 2. Drop `wiki_members` table
+- `wiki_members` table is **gone from the schema entirely** — no `CREATE TABLE`, no `wikiMembers` export.
+- The `users` table is defined with its final column set: identity + forge-* columns (added by Phase 1) and nothing more. The legacy `public_key` / `encrypted_private_key` columns are not in the schema at all.
 
-**File:** `packages/server/src/db/index.ts`
+There is no `DROP TABLE wiki_members` step, no `DROP COLUMN`, no `ALTER TABLE` cleanup, no "keep dead columns with a comment." The lightweight migration scheme is bypassed for this transition: per ADR 002, upgrading from a pre-ADR-002 instance requires a **fresh database**. Operators wipe their DB and the next `initDb` run produces the final schema directly.
 
-The lightweight migration scheme doesn't support drops via `ALTER TABLE` (sqlite limitation: yes you can `DROP TABLE`, but it's destructive and irreversible in dev). Decision: just `DROP TABLE IF EXISTS wiki_members` in `initDb`, **after** the `CREATE TABLE` block (so a fresh DB stops having the table at all):
+**Files:**
+- `packages/server/src/db/schema.ts` — delete the `wikiMembers` export and the `public_key` / `encrypted_private_key` fields on `users`.
+- `packages/server/src/db/index.ts` — remove the `CREATE TABLE wiki_members` block; the `addColumn` calls from Phase 1 for the new forge columns stay (they're idempotent for fresh DBs and harmless for any dev DB that did pick them up).
 
-```sql
-DROP TABLE IF EXISTS wiki_members;
-```
+### 2. Remove `wiki_members` code references
 
-**File:** `packages/server/src/db/schema.ts`
+Grep for `wikiMembers` and `wiki_members`. Expected remaining references:
 
-Delete the `wikiMembers` export.
+- `createWiki` / `importWiki` inserts (legacy from Phase 3) — delete.
+- `deleteWiki` (`services/wiki.ts:302–330`) `db.delete(wikiMembers).…` line — delete.
+- Test files importing `wikiMembers` — remove imports + any assertions against the old table.
 
-Update `deleteWiki` (`services/wiki.ts:302–330`) — remove the `db.delete(wikiMembers).…` line.
+Anything left after this should be in docs / changelogs / this plan — fine to leave.
 
-Search-and-remove `wikiMembers` imports across `services/wiki.ts` and any test files.
+### 3. Remove keypair-handling code references
 
-### 3. Drop user-side keypair columns
+Phase 5 already stopped the magic-link keypair generation and the `/api/auth/export-key` route. Phase 6 finishes:
 
-**Decision:** keep the columns. SQLite can `DROP COLUMN` since 3.35 (2021) and Node's bundled sqlite supports it, but the lightweight migration scheme doesn't track "this column was dropped." Adding a one-shot `ALTER TABLE users DROP COLUMN encrypted_private_key` to `initDb` is technically fine but irreversible.
+- Drop any remaining reads/writes of `users.public_key` / `users.encrypted_private_key` from `services/auth.ts`, `services/ssh.ts` (if any), and any backfill or test helpers.
+- Remove unused imports of `encryptPrivateKey` / `decryptPrivateKey` if no callers remain (the `encryptSecret` / `decryptSecret` wrappers added in Phase 1 stay).
 
-Lower-risk path: stop reading and writing `encrypted_private_key` (already done in Phase 5), and leave a `// dropped from use in ADR 002; column kept for now` comment on the `encryptedPrivateKey` field in `schema.ts`. Revisit when migrations are proper.
-
-Same call for `publicKey` — it's keypair material no longer maintained by HangarWiki.
+The fields are gone from the schema (per section 1); the code stops referencing them.
 
 ### 4. PRODUCT.md rewrite
 
@@ -87,9 +89,11 @@ Check for items implied by old #10 ("Public, edit existing but not create"). Mar
 
 ## What gets ripped out
 
-- `wiki_members` table (DROP), `wikiMembers` schema export, all reads/writes.
-- The `'owner' | 'editor' | 'viewer'` role enum and any types that depended on it.
+- `wiki_members` from the schema definition (no `CREATE TABLE` and no `wikiMembers` export); all reads/writes; the `'owner' | 'editor' | 'viewer'` role enum and any types that depended on it.
+- `users.public_key` / `users.encrypted_private_key` from the schema definition; all remaining reads/writes.
 - PRODUCT.md's "has its own auth" framing.
+
+(No live-DB DROPs or ALTERs. Operators wipe their database; the next startup produces the final schema directly.)
 
 ## Don't ship before
 

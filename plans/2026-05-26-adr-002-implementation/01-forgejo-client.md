@@ -102,18 +102,33 @@ addColumn(`ALTER TABLE users ADD COLUMN forge_token_id INTEGER`);
 
 **File:** new `packages/server/src/services/forge-identity.ts`
 
+Derived from **both** local-part and domain of the email, joined with `_`. Keeps the email's intent visible in the Forgejo handle (especially helpful when admins are looking at the user list and matching humans to accounts).
+
 ```ts
 export function deriveCandidateUsername(email: string): string;
-  // local-part, lowercased, [a-z0-9_-] only, truncated to 40, with fallback
-  // to "user" if nothing valid remains.
+  // 1. Lowercase the whole email; split on the last "@".
+  // 2. Local-part: scrub to [a-z0-9-] (replace dots, underscores, plus-tags,
+  //    anything else with "-"; collapse runs of "-"; trim leading/trailing "-").
+  //    Truncate to 18 chars.
+  // 3. Domain: scrub to [a-z0-9-] (replace dots with "-"; same run/trim rules).
+  //    Truncate to 18 chars.
+  // 4. Join with "_" between them.
+  // 5. If either side empties out, fall back to "user" for that side.
+  // Examples:
+  //   alice@example.com         → "alice_example-com"
+  //   bob.smith@test.org        → "bob-smith_test-org"
+  //   carla+work@long-domain.co → "carla-work_long-domain-co"
 
 export async function deriveAvailableUsername(email: string): Promise<string>;
-  // Calls deriveCandidateUsername, then tries the candidate against Forgejo
-  // (admin GET /users/search?q=). On collision, append "-2", "-3", ... up to
-  // -99; if all taken, append 6-char nanoid suffix. Returns the chosen name.
+  // Calls deriveCandidateUsername, then probes against Forgejo (HEAD/GET
+  // /users/{name} — 404 = available, 200 = taken). On collision, append
+  // "-2", "-3", ... up to "-99"; if all 99 variants are taken, append a
+  // 6-char nanoid suffix. Returns the chosen name.
 ```
 
-Verify against Forgejo by HEAD/GET to `/users/{name}` rather than `/users/search` if the search endpoint isn't admin-accessible.
+Forgejo username constraints (verified against v15): regex `^[a-zA-Z0-9]+([-_.][a-zA-Z0-9]+)*$`, length 1–40. The 18 + `_` + 18 + collision suffix shape stays under 40.
+
+Stored on `users.forge_username` so HangarWiki doesn't re-derive on every call. Forgejo's uniqueness is the source of truth, but the mirror avoids extra API calls.
 
 ### 5. Crypto helpers for the PAT
 
