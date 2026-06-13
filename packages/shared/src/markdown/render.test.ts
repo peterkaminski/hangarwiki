@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { renderMarkdown } from './render.js';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const MOBILE_OVERFLOW_FIXTURE = readFileSync(
+  join(HERE, '__fixtures__', 'mobile-overflow.md'),
+  'utf8',
+);
 
 describe('renderMarkdown', () => {
   it('renders basic Markdown to HTML', async () => {
@@ -85,5 +94,70 @@ Regular **bold** and *italic*.
     const result = await renderMarkdown('<script>alert("xss")</script>\n\n# Safe');
     expect(result.html).not.toContain('<script>');
     expect(result.html).toContain('<h1>Safe</h1>');
+  });
+
+  describe('GFM features', () => {
+    it('renders pipe tables as <table>', async () => {
+      const result = await renderMarkdown(
+        '| A | B |\n|---|---|\n| 1 | 2 |\n',
+      );
+      expect(result.html).toContain('<table>');
+      expect(result.html).toContain('<th>A</th>');
+      expect(result.html).toContain('<td>1</td>');
+    });
+
+    it('autolinks bare URLs in paragraphs', async () => {
+      const result = await renderMarkdown(
+        'See https://example.org/path for details.',
+      );
+      expect(result.html).toContain(
+        '<a href="https://example.org/path">https://example.org/path</a>',
+      );
+    });
+
+    it('renders fenced code blocks as <pre><code>', async () => {
+      const result = await renderMarkdown('```\nhello world\n```\n');
+      expect(result.html).toMatch(/<pre><code[^>]*>hello world\n<\/code><\/pre>/);
+    });
+
+    it('renders strikethrough as <del>', async () => {
+      const result = await renderMarkdown('~~struck~~');
+      expect(result.html).toContain('<del>struck</del>');
+    });
+
+    it('renders task lists', async () => {
+      const result = await renderMarkdown('- [ ] todo\n- [x] done\n');
+      expect(result.html).toContain('type="checkbox"');
+      expect(result.html).toContain('disabled');
+    });
+  });
+
+  describe('mobile-overflow fixture', () => {
+    // The fixture exercises every prose construct that previously caused
+    // narrow-viewport overflow (see #12, #14): bare URLs, long anchor text,
+    // wide code blocks, wide tables, plus strikethrough as a GFM canary.
+    // This test pins the output structure; the layout/visual side of the
+    // same scenarios is covered by Playwright tests (#16).
+    it('renders without throwing', async () => {
+      const result = await renderMarkdown(MOBILE_OVERFLOW_FIXTURE);
+      expect(result.html).toBeTruthy();
+    });
+
+    it('produces the expected GFM constructs', async () => {
+      const result = await renderMarkdown(MOBILE_OVERFLOW_FIXTURE);
+      // Table from the wide-table section
+      expect(result.html).toContain('<table>');
+      expect(result.html).toContain('<th>Col A</th>');
+      // Autolink from the bare URL paragraph
+      expect(result.html).toMatch(
+        /<a href="https:\/\/example\.org\/another\/extremely\/long\/path[^"]*">/,
+      );
+      // Fenced code block
+      expect(result.html).toContain('<pre><code');
+      // Strikethrough
+      expect(result.html).toContain('<del>');
+      // Wikilink with display text (also exercised in fixture)
+      expect(result.linkTargets).toContain('Should Exist');
+    });
   });
 });
