@@ -16,12 +16,13 @@ interface EditorProps {
   placeholder?: string;
   pages?: PageInfo[];
   wikiSlug?: string;
+  focusOnMount?: boolean;
   onSave?: () => void;
   onCancel?: () => void;
   onUpload?: (file: File) => Promise<string | null>;
 }
 
-export function Editor({ value, onChange, placeholder, pages, wikiSlug, onSave, onCancel, onUpload }: EditorProps) {
+export function Editor({ value, onChange, placeholder, pages, wikiSlug, focusOnMount, onSave, onCancel, onUpload }: EditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const autocompleteCompartment = useRef(new Compartment());
@@ -88,6 +89,10 @@ export function Editor({ value, onChange, placeholder, pages, wikiSlug, onSave, 
     });
 
     viewRef.current = view;
+
+    if (focusOnMount) {
+      view.focus();
+    }
 
     return () => {
       view.destroy();

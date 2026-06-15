@@ -50,13 +50,27 @@ export function PageView() {
     }
 
     Promise.all([
-      pagesApi.get(wikiSlug, urlPath),
+      pagesApi.get(wikiSlug, urlPath).catch(() => null),
       pagesApi.list(wikiSlug),
       wikisApi.get(wikiSlug),
-      pagesApi.backlinks(wikiSlug, urlPath),
+      pagesApi.backlinks(wikiSlug, urlPath).catch(() => ({ backlinks: [] as PageInfo[] })),
       // Fetch sidebar (may not exist — that's fine)
       pagesApi.get(wikiSlug, '_sidebar').catch(() => null),
-    ]).then(async ([{ page: newPage }, { pages: allPages }, { wiki }, { backlinks: bl }, sidebarResult]) => {
+    ]).then(async ([pageResult, { pages: allPages }, { wiki }, { backlinks: bl }, sidebarResult]) => {
+      // Missing page: follow the wiki's incipientLinkStyle setting for authenticated users.
+      // Logged-out readers stay on "Page not found" rather than getting bounced through /login.
+      if (!pageResult) {
+        if ((wiki.incipientLinkStyle ?? 'create') === 'create' && user) {
+          const derivedTitle = urlPath.replace(/_/g, ' ');
+          navigate(`/${wikiSlug}/_new?title=${encodeURIComponent(derivedTitle)}`, { replace: true });
+          return;
+        }
+        setPage(null);
+        setLoading(false);
+        return;
+      }
+
+      const newPage = pageResult.page;
       let rendered = await renderMarkdown(
         newPage.content,
         `/${wikiSlug}`,
@@ -89,7 +103,7 @@ export function PageView() {
       setPage(null);
       setLoading(false);
     });
-  }, [wikiSlug, urlPath]);
+  }, [wikiSlug, urlPath, user, navigate]);
 
   if (loading && !page) return <div className="p-8 text-gray-500">Loading...</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
